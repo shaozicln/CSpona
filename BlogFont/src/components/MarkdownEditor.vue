@@ -5,7 +5,7 @@
     <input v-model="title" type="text" placeholder="输入标题" />
     <button class="button" @click="submitArticle">提交</button>
     <div class="markdown-editor">
-      <textarea v-model="content" class="markdown-input" />
+      <textarea v-model="content" class="markdown-input" />   
       <div class="markdown-preview" v-html="renderedContent"></div>
     </div>
   </div>
@@ -45,6 +45,7 @@ const submitArticle = async () => {
     })
     const data = await response.json()
     console.log(data)
+    console.log("标记标记");
     alert("文章上传成功 (^_^) 快去看看吧 ! ")
     window.location.reload()
   } catch (error) {

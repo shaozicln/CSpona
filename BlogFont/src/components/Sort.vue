@@ -38,6 +38,17 @@ onMounted(() => {
                     'rgba(116,164, 88, 0.8)',
                     'rgba( 62, 99, 66, 0.8)',
                 ],
+                gradient: {
+                    backgroundColor: [
+                        'rgba(204,180, 44, 0.8)',
+                        'rgba(220,239,233, 0.8)',
+                        'rgba(164,214,211, 0.8)',
+                        'rgba(116,164, 88, 0.8)',
+                        'rgba( 62, 99, 66, 0.8)',
+                    ],
+                    borderColor: 'rgba(0,0,0,0.8)',
+                    borderWidth: 1
+                },
                 borderColor: chartType === 'line' ? 'black'
                     : [
                         // 'rgba(204,180, 44)',
@@ -103,7 +114,7 @@ onMounted(() => {
 
 function changeChartType() {
     chart.destroy();
-    chartType = chartType === 'bar' ? 'line' : chartType === 'line' ? 'pie' : 'bar';
+    chartType = chartType === 'bar' ? 'line' : chartType === 'line' ? 'pie' : chartType === 'pie' ? 'bubble' : chartType === 'bubble' ? 'doughnut' : chartType === 'doughnut' ? 'polarArea' : chartType === 'polarArea' ? 'radar' : chartType === 'radar' ? 'scatter' : 'bar';
     const articleCounts = JSON.parse(localStorage.getItem('articleCounts'));
     const labels = Object.keys(articleCounts).map(label => decodeURIComponent(label));
     const data = Object.values(articleCounts);
