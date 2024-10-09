@@ -1,7 +1,10 @@
 package api
 
 import (
+	"encoding/base64"
 	"github.com/gin-gonic/gin"
+	"golang.org/x/crypto/scrypt"
+	"log"
 	"net/http"
 	"strconv"
 	"time"
@@ -19,6 +22,10 @@ type User struct {
 	Article      []Article `gorm:"foreign key"`
 	Comments     []Comment
 	Messages     []Message
+}
+
+func (User) TableName() string {
+	return "users"
 }
 
 func GetUserWithUsername(c *gin.Context) {
@@ -39,6 +46,7 @@ func GetUserWithUsername(c *gin.Context) {
 
 func PostUser(c *gin.Context) {
 	var user User
+	user.Password = ScryptPw(user.Password)
 	if err := c.ShouldBindJSON(&user); err == nil {
 		db.Create(&user)
 		c.JSON(200, gin.H{"data": user})
@@ -89,4 +97,18 @@ func GetUserWithId(c *gin.Context) {
 	db.Model(&Article{}).Where("user_id = ?", user.Id).Count(&articleCount)
 	user.ArticleCount = int(articleCount)
 	c.JSON(http.StatusOK, gin.H{"data": user})
+}
+
+// 密码加密
+func ScryptPw(password string) string {
+	const KeyLen = 10
+	salt := make([]byte, 8)
+	salt = []byte{12, 56, 45, 89, 52, 123, 45, 96}
+
+	HashPw, err := scrypt.Key([]byte(password), salt, 16384, 8, 1, KeyLen)
+	if err != nil {
+		log.Fatal(err)
+	}
+	fpw := base64.StdEncoding.EncodeToString(HashPw)
+	return fpw
 }

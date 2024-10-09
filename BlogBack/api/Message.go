@@ -15,6 +15,10 @@ type Message struct {
 	User      User
 }
 
+func (m Message) TableName() string {
+	return "messages"
+}
+
 func GetMessage(c *gin.Context) {
 	var messages []Message
 	db.Find(&messages)

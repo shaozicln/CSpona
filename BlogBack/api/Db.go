@@ -38,6 +38,8 @@ func InitDb() {
 	if err != nil {
 		fmt.Println("连接数据库失败，请检查参数：", err)
 		os.Exit(1)
+	} else {
+		fmt.Println("数据库连接成功")
 	}
 
 }

@@ -13,6 +13,10 @@ type Advice struct {
 	Content  string `gorm:"type:varchar(255)" column:"content"`
 }
 
+func (Advice) TableName() string {
+	return "advices"
+}
+
 func GetAdvice(c *gin.Context) {
 	username := c.Query("username")
 	typeA := c.Query("type")
@@ -26,6 +30,18 @@ func GetAdvice(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, gin.H{"data": advices})
 }
+
+//func GetAdvice(c *gin.Context) {
+//	var advices []Advice
+//	result := db.Find(&advices)
+//	if result.Error != nil {
+//		fmt.Printf("查询出错: %v\n", result.Error)
+//		c.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
+//		return
+//	}
+//	fmt.Printf("查询到的建议数量: %d\n", len(advices))
+//	c.JSON(http.StatusOK, gin.H{"data": advices})
+//}
 
 func PostAdvice(c *gin.Context) {
 	var advice Advice

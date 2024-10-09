@@ -13,6 +13,10 @@ type Category struct {
 	Img         string
 }
 
+func (Category) TableName() string {
+	return "categories"
+}
+
 func GetCategory(c *gin.Context) {
 	name := c.Query("name")
 	id := c.Query("id")

@@ -2,8 +2,8 @@ package routes
 
 import (
 	"BlogBack/api"
+	"BlogBack/middleware"
 	"BlogBack/utils"
-	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 )
 
@@ -11,11 +11,7 @@ import (
 func InitRouter() *gin.Engine {
 	gin.SetMode(utils.AppMode)
 	r := gin.Default()
-	corsConfig := cors.DefaultConfig()
-	corsConfig.AllowOrigins = []string{"*"}
-	corsConfig.AllowMethods = []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"}
-	r.Use(Cors(config))
-
+	r.Use(middleware.Cors())
 	router := r.Group("api")
 	{
 		//...登陆验证路由... Login.go
@@ -44,10 +40,10 @@ func InitRouter() *gin.Engine {
 		router.GET("/categories-with-articles", api.CategoryWithArticle)
 
 		//...文章内容展示+评论路由... ContentAndComment.go
-		router.GET("/categories", api.GetContent)
-		router.POST("/categories", api.PostContent)
-		router.DELETE("/categories/:id", api.DeleteContent)
-		router.GET("/categories/:id", api.GetComment)
+		router.GET("/path-to-article/:id", api.GetContent)
+		router.POST("/path-to-article/:id", api.PostContent)
+		router.DELETE("/path-to-article/:id", api.DeleteContent)
+		router.GET("/comments/:articleId", api.GetComment)
 
 		//...留言板路由... Message.go
 		router.GET("/commentBoard", api.GetMessage)

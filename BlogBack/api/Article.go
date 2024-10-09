@@ -23,6 +23,10 @@ type Article struct {
 	Category     Category
 }
 
+func (Article) TableName() string {
+	return "articles"
+}
+
 func SearchArticle(c *gin.Context) {
 	title := c.Query("title")
 	id := c.Query("id")

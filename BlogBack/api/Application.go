@@ -16,6 +16,10 @@ type Application struct {
 	Img          string `gorm:"type:varchar(255)" column:"img"`
 }
 
+func (Application) TableName() string {
+	return "applications"
+}
+
 func GetApplication(c *gin.Context) {
 	id := c.Query("id")
 	username := c.Query("username")

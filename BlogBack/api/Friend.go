@@ -14,6 +14,10 @@ type Friend struct {
 	Img          string `gorm:"type:varchar(255)" column:"img"`
 }
 
+func (Friend) TableName() string {
+	return "friends"
+}
+
 func GetFriend(c *gin.Context) {
 	id := c.Query("id")
 	name := c.Query("name")
