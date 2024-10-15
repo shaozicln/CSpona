@@ -1,7 +1,5 @@
 <script setup>
 import MyHead from './components/MyHead.vue'
-import TypingText from './components/Home.vue'
-import MessageBoard from './components/MessageBoard.vue'
 </script>
 
 <template>

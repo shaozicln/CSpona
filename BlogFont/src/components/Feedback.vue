@@ -34,6 +34,11 @@
 </template>
 
 <script setup>
+// 获取全局URL属性
+import { getCurrentInstance } from 'vue';
+const instance = getCurrentInstance();
+const URL = instance?.appContext.config.globalProperties.URL;
+
 import Author from './Author.vue'
 
 import { ref } from 'vue'
@@ -60,7 +65,7 @@ const emailWeb = localStorage.getItem("email")
 
 const createAdvice = async () => {
     try {
-        const response = await fetch('http://127.0.0.1:8081/advice', {
+        const response = await fetch(`${URL}/advice`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -82,7 +87,7 @@ const createAdvice = async () => {
 }
 const createApplication = async () => {
     try {
-        const response = await fetch('http://127.0.0.1:8081/application', {
+        const response = await fetch(`${URL}/application`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'

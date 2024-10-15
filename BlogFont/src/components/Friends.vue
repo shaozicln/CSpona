@@ -25,6 +25,11 @@
 </template>
 
 <script setup>
+// 获取全局URL属性
+import { getCurrentInstance } from 'vue';
+const instance = getCurrentInstance();
+const URL = instance?.appContext.config.globalProperties.URL;
+
 import { ref, onMounted } from 'vue'
 
 const friends = ref([])
@@ -34,7 +39,7 @@ const sendInput = ref(null)
 
 onMounted(async () => {
     try {
-        const response = await fetch('http://127.0.0.1:8081/friendsWeb', {
+        const response = await fetch(`${URL}/friendsWeb`, {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json'

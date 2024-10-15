@@ -6,6 +6,11 @@
 </template>
 
 <script setup>
+// 获取全局URL属性
+import { getCurrentInstance } from 'vue';
+const instance = getCurrentInstance();
+const URL = instance?.appContext.config.globalProperties.URL;
+
 import { onMounted } from 'vue';
 import { Chart } from 'chart.js';
 import { registerables } from 'chart.js';

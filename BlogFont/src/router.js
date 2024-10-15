@@ -14,6 +14,7 @@ import Advice from './components/Advice.vue'
 import Application from './components/Application.vue'
 import ArticlesManage from './components/ArticlesManage.vue'
 import ArticleContent from './components/ArticleContent.vue'
+import PictureUpload from './components/PictureUpload.vue'
 
 const routes = [
     {
@@ -93,6 +94,11 @@ const routes = [
         meta: {
             hideMyHead: true
         }
+    },
+    {
+        path: '/picture-upload',
+        name: 'PictureUpload',
+        component: PictureUpload
     },
 ]
 

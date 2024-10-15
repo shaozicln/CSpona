@@ -42,6 +42,11 @@
 </template>
 
 <script setup>
+// 获取全局URL属性
+import { getCurrentInstance } from 'vue';
+const instance = getCurrentInstance();
+const URL = instance?.appContext.config.globalProperties.URL;
+
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 
@@ -77,7 +82,7 @@ const check = async () => {
         return;
     }
     try {
-        fetch("http://127.0.0.1:8081/login", {
+        fetch(`${URL}/login`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
@@ -141,7 +146,7 @@ const resetPassword = async () => {
             return;
         }
         const username = newUsername.value;
-        fetch(`http://127.0.0.1:8081/users/${username}`, {
+        fetch(`${ URL } /users/${username}`, {
             method: "PUT",
             headers: {
                 "Content-Type": "application/json"

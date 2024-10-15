@@ -12,6 +12,11 @@
 </template>
 
 <script setup>
+// 获取全局URL属性
+import { getCurrentInstance } from 'vue';
+const instance = getCurrentInstance();
+const URL = instance?.appContext.config.globalProperties.URL;
+
 import { ref, computed } from 'vue';
 import { marked } from 'marked';
 const title = ref('')
@@ -30,7 +35,7 @@ const submitArticle = async () => {
     return;
   }
   try {
-    const response = await fetch('http://127.0.0.1:8081/articles', {
+    const response = await fetch(`${URL}/articles`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'

@@ -26,6 +26,11 @@
 </template>
 
 <script setup>
+// 获取全局URL属性
+import { getCurrentInstance } from 'vue';
+const instance = getCurrentInstance();
+const URL = instance?.appContext.config.globalProperties.URL;
+
 import { useRouter } from 'vue-router';
 const router = useRouter();
 
@@ -36,7 +41,7 @@ const categories = ref([]);
 // 获取分类和文章数据
 const fetchCategories = async () => {
     try {
-        const response = await fetch('http://127.0.0.1:8081/categories-with-articles');
+        const response = await fetch(`${URL}/categories-with-articles`);
         const data = await response.json();
         categories.value = data.data;
 

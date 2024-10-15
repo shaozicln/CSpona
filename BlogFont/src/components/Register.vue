@@ -22,6 +22,11 @@
 </template>
 
 <script setup>
+// 获取全局URL属性
+import { getCurrentInstance } from 'vue';
+const instance = getCurrentInstance();
+const URL = instance?.appContext.config.globalProperties.URL;
+
 import { ref } from 'vue';
 
 const username = ref('');
@@ -39,7 +44,7 @@ const createUser = async () => {
         alert("信息不完善,请重新填写");
         return 0;
     }
-    const url = "http://127.0.0.1:8081/users";
+    const url = `${URL}/users`;
     fetch(url, {
         method: "POST",
         headers: {

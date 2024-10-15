@@ -41,6 +41,11 @@
 
 <script setup>
 
+// 获取全局URL属性
+import { getCurrentInstance } from 'vue';
+const instance = getCurrentInstance();
+const URL = instance?.appContext.config.globalProperties.URL;
+
 import Feedback from './Feedback.vue'
 import ArticleContent from './ArticleContent.vue'
 import { ref, onMounted } from 'vue'
@@ -105,8 +110,8 @@ const performSearch = async () => {
         searchInput.value.focus();
     }, 0);
 
-    const titleUrl = `http://127.0.0.1:8081/search?title=${encodeURIComponent(searchQuery.value)}`;
-    const contentUrl = `http://127.0.0.1:8081/search?content=${encodeURIComponent(searchQuery.value)}`;
+    const titleUrl = `${ URL }/search?title=${encodeURIComponent(searchQuery.value)}`;
+    const contentUrl = `${ URL }/search?content=${encodeURIComponent(searchQuery.value)}`;
 
     try {
         const titleResponse = await fetch(titleUrl);

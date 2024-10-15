@@ -60,6 +60,11 @@
 </template>
 
 <script setup>
+// 获取全局URL属性
+import { getCurrentInstance } from 'vue';
+const instance = getCurrentInstance();
+const URL = instance?.appContext.config.globalProperties.URL;
+
 import AuthorBack from './AuthorBack.vue'
 import { ref } from 'vue';
 import MarkdownEditor from './MarkdownEditor.vue';
@@ -74,7 +79,7 @@ const advices = ref([]);
 const advice = async () => {
     showModal.value = true;
     try {
-        const response = await fetch('http://127.0.0.1:8081/advice')
+        const response = await fetch(`${URL}/advice`)
         const data = await response.json()
         console.log(data)
         advices.value = data.data;
@@ -86,7 +91,7 @@ const advice = async () => {
 const sortByDefault = async () => {
     showModal.value = true;
     try {
-        const response = await fetch('http://127.0.0.1:8081/advice')
+        const response = await fetch(`${URL}/advice`)
         const data = await response.json()
         console.log(data)
         advices.value = data.data;
@@ -98,7 +103,7 @@ const sortByDefault = async () => {
 const sortByType = async () => {
     showModal.value = true;
     try {
-        const response = await fetch('http://127.0.0.1:8081/advice')
+        const response = await fetch(`${ URL } /advice`)
         const data = await response.json()
         console.log(data)
         advices.value = data.data.sort((a, b) => {
@@ -114,7 +119,7 @@ const sortByType = async () => {
 const sortByUsername = async () => {
     showModal.value = true;
     try {
-        const response = await fetch('http://127.0.0.1:8081/advice')
+        const response = await fetch(`${URL}/advice`)
         const data = await response.json()
         console.log(data)
         advices.value = data.data.sort((a, b) => {
@@ -139,7 +144,7 @@ const applications = ref([]);
 const application = async () => {
     showModal2.value = true;
     try {
-        const response = await fetch('http://127.0.0.1:8081/application')
+        const response = await fetch(`${URL}/application`)
         const data = await response.json()
         console.log(data)
         applications.value = data.data;
@@ -154,7 +159,7 @@ function hideModal2() {
 const applicationPost = async (index) => {
     const newFriendsWeb = ref('');
     try {
-        const response = await fetch('http://127.0.0.1:8081/application?id=' + index)
+        const response = await fetch(`${URL}/application?id=` + index)
         const data = await response.json()
         console.log(data)
         newFriendsWeb.value = data.data;
@@ -163,7 +168,7 @@ const applicationPost = async (index) => {
         console.error(error)
     }
     try {
-        const response = await fetch('http://127.0.0.1:8081/friendsWeb', {
+        const response = await fetch(`${URL}/friendsWeb`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -184,7 +189,7 @@ const applicationPost = async (index) => {
 }
 const applicationDelete = async (index) => {
     try {
-        const response = await fetch('http://127.0.0.1:8081/application/' + index, {
+        const response = await fetch(`${URL}/application/` + index, {
             method: 'DELETE',
         })
         const data = await response.json()

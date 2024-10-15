@@ -17,6 +17,11 @@
 </template>
 
 <script setup>
+// 获取全局URL属性
+import { getCurrentInstance } from 'vue';
+const instance = getCurrentInstance();
+const URL = instance?.appContext.config.globalProperties.URL;
+
 import Friends from './Friends.vue'
 import { ref, onMounted, onUnmounted } from 'vue'
 
@@ -74,7 +79,7 @@ const randomLeft = () => {
 // 获取留言列表
 const getMessages = async () => {
   try {
-    const response = await fetch('http://127.0.0.1:8081/commentBoard', {
+    const response = await fetch(`${URL}/commentBoard`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json'
@@ -116,7 +121,7 @@ const sendMessage = async () => {
 
   if (!message.value.trim()) return; // 忽略空格或空留言
   try {
-    const response = await fetch('http://127.0.0.1:8081/commentBoard', {
+    const response = await fetch(`${URL}/commentBoard`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'

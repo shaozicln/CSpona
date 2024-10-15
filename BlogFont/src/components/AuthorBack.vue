@@ -21,6 +21,11 @@
   </template>
   
   <script setup>
+  // 获取全局URL属性
+  import { getCurrentInstance } from 'vue';
+  const instance = getCurrentInstance();
+  const URL = instance?.appContext.config.globalProperties.URL;
+
   import { ref } from 'vue'
   
   const authorAvatar = ref('35.jpg')

@@ -22,6 +22,10 @@
 </template>
 
 <script setup>
+// 获取全局URL属性
+import { getCurrentInstance } from 'vue';
+const instance = getCurrentInstance();
+const URL = instance?.appContext.config.globalProperties.URL;
 
 import { ref } from 'vue';
 
@@ -31,7 +35,7 @@ const advices = ref([]);
 const advice = async () => {
     showModal.value = true;
     try {
-        const response = await fetch('http://127.0.0.1:8081/advice')
+        const response = await fetch(`${URL}/advice`)
         const data = await response.json()
         console.log(data)
         advices.value = data.data;
@@ -43,7 +47,7 @@ const advice = async () => {
 const sortByDefault = async () => {
     showModal.value = true;
     try {
-        const response = await fetch('http://127.0.0.1:8081/advice')
+        const response = await fetch(`${URL}/advice`)
         const data = await response.json()
         console.log(data)
         advices.value = data.data;
@@ -55,7 +59,7 @@ const sortByDefault = async () => {
 const sortByType = async () => {
     showModal.value = true;
     try {
-        const response = await fetch('http://127.0.0.1:8081/advice')
+        const response = await fetch(`${URL}/advice`)
         const data = await response.json()
         console.log(data)
         advices.value = data.data.sort((a, b) => {
@@ -71,7 +75,7 @@ const sortByType = async () => {
 const sortByUsername = async () => {
     showModal.value = true;
     try {
-        const response = await fetch('http://127.0.0.1:8081/advice')
+        const response = await fetch(`${URL}/advice`)
         const data = await response.json()
         console.log(data)
         advices.value = data.data.sort((a, b) => {

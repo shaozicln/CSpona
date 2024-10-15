@@ -24,6 +24,11 @@
 </template>
 
 <script setup>
+// 获取全局URL属性
+import { getCurrentInstance } from 'vue';
+const instance = getCurrentInstance();
+const URL = instance?.appContext.config.globalProperties.URL;
+
 import Author from './Author.vue'
 import { marked } from 'marked';
 
@@ -39,7 +44,7 @@ const route = useRoute();
 onMounted(
     async () => {
         try {
-            const response = await fetch('http://127.0.0.1:8081/path-to-article/' + articleId);
+            const response = await fetch(`${URL}/path-to-article/` + articleId);
             const data = await response.json();
             article.value = data.data;
             console.log(data.data);
