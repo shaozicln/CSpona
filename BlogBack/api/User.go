@@ -6,7 +6,10 @@ import (
 	"golang.org/x/crypto/scrypt"
 	"log"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -46,13 +49,28 @@ func GetUserWithUsername(c *gin.Context) {
 
 func PostUser(c *gin.Context) {
 	var user User
-	user.Password = ScryptPw(user.Password)
-	if err := c.ShouldBindJSON(&user); err == nil {
-		db.Create(&user)
-		c.JSON(200, gin.H{"data": user})
-	} else {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	//获取文件，错误处理
+	file, err := c.FormFile("avatar")
+	if err != nil {
+		c.JSON(500, gin.H{"error": "无法获取文件"})
+		return
 	}
+	baseDir := "../BlogFont/public/Pictures"           //定义基本目录
+	filename := filepath.Base(file.Filename)           //获取上传的文件名
+	savePath := filepath.Join(baseDir, filename)       //连接字段，形成存储路径
+	savePath = strings.ReplaceAll(savePath, "\\", "/") // 将路径用正斜杠保存，兼容不同操作系统，同时方便前端读取
+
+	_ = os.MkdirAll(baseDir, os.ModePerm) //创建保存路径所在目录，目录存在则忽略，同时忽略了错误处理
+	_ = c.SaveUploadedFile(file, savePath)
+
+	user.Avatar = filename                 //只存储文件名字
+	user.Username = c.PostForm("username") //数据库其他字段和数据
+	user.Email = c.PostForm("email")
+	user.Password = ScryptPw(c.PostForm("password")) //密码加密储存
+	user.RoleQx = c.PostForm("role_qx")
+
+	db.Create(&user)
+	c.JSON(200, gin.H{"message": "created successfully", "data": user})
 }
 func PutUser(c *gin.Context) {
 	username := c.Param("username")

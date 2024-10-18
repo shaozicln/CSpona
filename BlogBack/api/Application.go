@@ -3,7 +3,10 @@ package api
 import (
 	"github.com/gin-gonic/gin"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strconv"
+	"strings"
 )
 
 type Application struct {
@@ -39,12 +42,29 @@ func GetApplication(c *gin.Context) {
 
 func PostApplication(c *gin.Context) {
 	var application Application
-	if err := c.ShouldBindJSON(&application); err == nil {
-		db.Create(&application)
-		c.JSON(200, gin.H{"data": application})
-	} else {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	//获取文件，错误处理
+	file, err := c.FormFile("img")
+	if err != nil {
+		c.JSON(500, gin.H{"error": "无法获取文件"})
+		return
 	}
+	baseDir := "../BlogFont/public/Pictures"           //定义基本目录
+	filename := filepath.Base(file.Filename)           //获取上传的文件名
+	savePath := filepath.Join(baseDir, filename)       //连接字段，形成存储路径
+	savePath = strings.ReplaceAll(savePath, "\\", "/") // 将路径用正斜杠保存，兼容不同操作系统，同时方便前端读取
+
+	_ = os.MkdirAll(baseDir, os.ModePerm) //创建保存路径所在目录，目录存在则忽略，同时忽略了错误处理
+	_ = c.SaveUploadedFile(file, savePath)
+
+	application.Img = filename            //只存储文件名字
+	application.Name = c.PostForm("name") //数据库其他字段和数据
+	application.Username = c.PostForm("username")
+	application.Email = c.PostForm("email")
+	application.Web = c.PostForm("web")
+	application.Introduction = c.PostForm("introduction")
+
+	db.Create(&application)
+	c.JSON(200, gin.H{"message": "created successfully", "data": application})
 }
 
 func DeleteApplication(c *gin.Context) {

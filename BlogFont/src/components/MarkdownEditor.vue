@@ -1,11 +1,11 @@
 <template>
   <div class="left-side">
     <input v-model="categoryId" type="number" placeholder="分类Id">
-    <input v-model="img" type="text" placeholder="图片名称">
+    <input @change="fileChange" type="file" placeholder="来一张文章底图">
     <input v-model="title" type="text" placeholder="输入标题" />
     <button class="button" @click="submitArticle">提交</button>
     <div class="markdown-editor">
-      <textarea v-model="content" class="markdown-input" />   
+      <textarea v-model="content" class="markdown-input" />
       <div class="markdown-preview" v-html="renderedContent"></div>
     </div>
   </div>
@@ -23,31 +23,44 @@ const title = ref('')
 const content = ref('')
 const categoryId = ref('')
 const userId = ref(1)
-const img = ref('')
 
 const renderedContent = computed(() => {
   return marked(content.value);
 });
 
+//图片文件名字赋值
+const file = ref(null);
+function fileChange(event) {
+  const files = event.target.files;
+  if (files && files.length > 0) {
+    file.value = files[0];
+    console.log(file.value.name);
+  } else {
+    console.log('没有选择文件');
+  }
+}
+
 const submitArticle = async () => {
-  if (!title.value || !content.value || !categoryId.value || !userId.value || !img.value) {
+  if (!title.value || !content.value || !categoryId.value || !userId.value) {
     alert("信息不完善");
     return;
   }
   try {
+    const formData = new FormData();
+    formData.append('title', title.value)
+    formData.append('content', content.value)
+    formData.append('category_id', categoryId.value)
+    formData.append('user_id', userId.value)
+    formData.append('img', file.value)
+
     const response = await fetch(`${URL}/articles`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        title: title.value,
-        content: content.value,
-        categoryId: categoryId.value,
-        userId: userId.value,
-        img: img.value
-      }),
+      body: formData,
     })
+    // 检查响应状态码
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
     const data = await response.json()
     console.log(data)
     console.log("标记标记");

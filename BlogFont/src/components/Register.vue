@@ -3,15 +3,12 @@
         <div id="con">
             <form action="#" class="form" id="form-up">
                 <h2 id="tit">注册</h2>
-                <select name="file" id="file" type="text" placeholder="请选择头像" v-model="avatarPath">
-                    <option value="" disabled selected>请选择头像</option>
-                    <option v-for="path in avatarPaths" :key="path" :value="path">{{ path }}</option>
-                </select><br>
+                <input @change="fileChange" type="file" placeholder="来一张文章底图">
                 <input v-model="username" placeholder="请输入用户名" type="text" name="username" id="username"><br>
                 <input v-model="newEmail" placeholder="请输入邮箱" type="password" name="email" id="email"><br>
                 <input v-model="password" placeholder="请输入密码" type="password" name="password" id="password"><br>
             </form>
-            <button id="bs" @click="createUser"class="button">注册</button>
+            <button id="bs" @click="createUser" class="button">注册</button>
             <div>
                 <br>
                 <router-link :to="{ path: '/login' }" class="register-link">已有帐号? 去登录</router-link>
@@ -33,39 +30,53 @@ const username = ref('');
 const email = ref('');
 const password = ref('');
 const roleQx = ref('B');
-const avatarPath = ref('')
-const avatarPaths = ref([
-    '31.jpg',
-    '35.jpg'
-])
+
+
+//图片文件名字赋值
+const file = ref(null);
+function fileChange(event) {
+    const files = event.target.files;
+    if (files && files.length > 0) {
+        file.value = files[0];
+        console.log(file.value.name);
+    } else {
+        console.log('没有选择文件');
+        alert("请选择头像")
+    }
+}
 
 const createUser = async () => {
-    if (username.value.trim() === '' || password.value.trim() === '' || avatarPath.value.trim() === '') {
-        alert("信息不完善,请重新填写");
-        return 0;
-    }
-    const url = `${URL}/users`;
-    fetch(url, {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-            Username: username.value,
-            Email: email.value,
-            Password: password.value,
-            RoleQx: roleQx.value,
-            Avatar: avatarPath.value,
-        }),
-    })
-        .then((response) => {
-            if (response.ok) {
-                alert("注册成功");
-                return response.json();
-            }
-            throw new Error("创建文章失败，状态码：" + response.status);
+    try {
+        if (username.value.trim() === '' || password.value.trim() === '' ) {
+            alert("信息不完善,请重新填写");
+            return 0;
+        }
+
+        const formData = new FormData();
+        formData.append('username', username.value)
+        formData.append('email', email.value)
+        formData.append('password', password.value)
+        formData.append('role_qx', roleQx.value)
+        formData.append('avatar', file.value)
+
+        const response = await fetch(`${URL}/users`, {
+            method: 'POST',
+            body: formData,
         })
-        .catch((error) => console.error("Error:", error));
+
+        // 检查响应状态码
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const data = await response.json()
+        console.log(data)
+        console.log("标记标记");
+        alert("注册成功 (^_^) 快去看看吧 ! ")
+        window.location.reload()
+    } catch (err) {
+        console.error(err)
+        alert("注册失败");
+    }
 };
 </script>
 
@@ -80,7 +91,7 @@ const createUser = async () => {
 #con {
     padding-top: 50px;
     padding-bottom: 25px;
-    width: 25vw;
+    width: 30vw;
     border: 1px solid #ddd;
     border-radius: 10px;
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
@@ -141,13 +152,15 @@ select {
 }
 
 .register-link {
-  color: #000000; /* black color */
-  text-decoration: none;
-  font-size:17px;
+    color: #000000;
+    /* black color */
+    text-decoration: none;
+    font-size: 17px;
 }
 
 .register-link:hover {
-  color: #00000099; /* gray color on hover */
+    color: #00000099;
+    /* gray color on hover */
 }
 
 /* 添加浮现效果 */

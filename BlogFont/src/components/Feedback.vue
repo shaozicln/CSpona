@@ -21,10 +21,10 @@
             <div class="bottom">
                 <h3>友链申请</h3><br>
                 <div>
-                    <input v-model="applicationForm.websiteName" type="text" placeholder="网站名称">
-                    <input v-model="applicationForm.websiteUrl" type="text" placeholder="请输入网址">
-                    <input v-model="applicationForm.websiteDescription" type="text" placeholder="来一句网站介绍">
-                    <input v-model="applicationForm.image" type="text" placeholder="来一张图片展示">
+                    <input v-model="websiteName" type="text" placeholder="网站名称">
+                    <input v-model="websiteUrl" type="text" placeholder="请输入网址">
+                    <input v-model="websiteDescription" type="text" placeholder="来一句网站介绍">
+                    <input @change="fileChange" type="file" placeholder="来一张图片展示">
                     <br>
                     <button @click="createApplication" class="button">提交</button>
                 </div>
@@ -53,12 +53,22 @@ const adviceForm = ref({
     content: ''
 })
 
-const applicationForm = ref({
-    websiteName: '',
-    websiteUrl: '',
-    websiteDescription: '',
-    image: ''
-})
+const websiteName = ref()
+const websiteUrl = ref()
+const websiteDescription = ref()
+
+//图片文件名字赋值
+const file = ref(null);
+function fileChange(event) {
+    const files = event.target.files;
+    if (files && files.length > 0) {
+        file.value = files[0];
+        console.log(file.value.name);
+    } else {
+        console.log('没有选择文件');
+    }
+}
+
 
 const usernameWeb = localStorage.getItem("username")
 const emailWeb = localStorage.getItem("email")
@@ -87,31 +97,32 @@ const createAdvice = async () => {
 }
 const createApplication = async () => {
     try {
+        const formData = new FormData();
+        formData.append('username', usernameWeb)
+        formData.append('email', emailWeb)
+        formData.append('name', websiteName.value)
+        formData.append('web', websiteUrl.value)
+        formData.append('introduction',websiteDescription.value)
+        formData.append('img', file.value)
+
         const response = await fetch(`${URL}/application`, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                username: usernameWeb,
-                email: emailWeb,
-                name: applicationForm.value.websiteName,
-                web: applicationForm.value.websiteUrl,
-                introduction: applicationForm.value.websiteDescription,
-                img: applicationForm.value.image
-            }),
+            body: formData,
         })
+        // 检查响应状态码
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
         const data = await response.json()
         console.log(data)
         alert("作者收到啦(^_^) 感谢友链! 请给作者一点时间 ~ ")
         window.location.reload()
     } catch (error) {
         console.error(error)
+        alert("图片上传失败");
     }
 }
 </script>
-
-
 
 <style scope>
 .container {

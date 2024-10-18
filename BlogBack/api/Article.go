@@ -3,7 +3,10 @@ package api
 import (
 	"github.com/gin-gonic/gin"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -46,12 +49,31 @@ func SearchArticle(c *gin.Context) {
 
 func PostArticle(c *gin.Context) {
 	var article Article
-	if err := c.ShouldBindJSON(&article); err == nil {
-		db.Create(&article)
-		c.JSON(200, gin.H{"data": article})
-	} else {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	//获取文件，错误处理
+	file, err := c.FormFile("img")
+	if err != nil {
+		c.JSON(500, gin.H{"error": "无法获取文件"})
+		return
 	}
+	baseDir := "../BlogFont/public/Pictures"           //定义基本目录
+	filename := filepath.Base(file.Filename)           //获取上传的文件名
+	savePath := filepath.Join(baseDir, filename)       //连接字段，形成存储路径
+	savePath = strings.ReplaceAll(savePath, "\\", "/") // 将路径用正斜杠保存，兼容不同操作系统，同时方便前端读取
+
+	_ = os.MkdirAll(baseDir, os.ModePerm) //创建保存路径所在目录，目录存在则忽略，同时忽略了错误处理
+	_ = c.SaveUploadedFile(file, savePath)
+
+	article.Img = filename              //只存储文件名字
+	article.Title = c.PostForm("title") //数据库其他字段和数据
+	article.Content = c.PostForm("content")
+	categoryId, _ := strconv.Atoi(c.PostForm("category_id"))
+	article.CategoryId = uint(categoryId)
+
+	userId, _ := strconv.Atoi(c.PostForm("user_id"))
+	article.UserId = uint(userId)
+
+	db.Create(&article)
+	c.JSON(200, gin.H{"message": "created successfully", "data": article})
 }
 
 func PutArticle(c *gin.Context) {

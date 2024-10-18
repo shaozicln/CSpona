@@ -25,7 +25,7 @@ func Login(c *gin.Context) {
 		}
 		return
 	}
-	if user.Password == cinuser.Password {
+	if user.Password == ScryptPw(cinuser.Password) {
 		// 登录成功
 		articleCount := int64(0)
 		db.Model(&Article{}).Where("user_id = ?", user.Id).Count(&articleCount)
