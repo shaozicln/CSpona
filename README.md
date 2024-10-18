@@ -1,3 +1,5 @@
+注：Back文件已弃用
+
 数据库：库名和密码在BlogBack/config/config.ini文件
 注：
 - mysql建用户命令行：
