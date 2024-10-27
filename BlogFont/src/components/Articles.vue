@@ -14,7 +14,7 @@
             <!-- 文章分类 -->
             <div class="article-category" v-for="(category, index) in categories" :key="'category-' + category.Id">
                 <h2 :id="'category-' + index">{{ category.Name }}</h2>
-                    <!-- 如果当前分类下有文章，则渲染文章列表 -->
+                <!-- 如果当前分类下有文章，则渲染文章列表 -->
                 <div class="articles-list" v-if="category.Articles.length > 0">
                     <article class="article" v-for="(article, articleIndex) in category.Articles"
                         :key="'article-' + articleIndex">
@@ -26,7 +26,9 @@
                     </article>
                 </div>
                 <!-- 如果当前分类下没有文章，则显示“敬请期待” -->
-                <div v-else class="no-articles"><h3>————敬请期待————</h3></div>
+                <div v-else class="no-articles">
+                    <h3>————敬请期待————</h3>
+                </div>
             </div>
         </div>
     </div>
@@ -119,7 +121,11 @@ onMounted(() => {
     cursor: pointer;
     margin-bottom: 10px;
     position: relative;
-    /* 添加相对定位 */
+    animation: slide-fade-in both;
+    /* 使用浏览器的视图时间线,允许动画根据视口的变化进行同步 */
+    animation-timeline: view();
+    /* 定义动画时间范围 */
+    animation-range: contain 0% contain 50%;
 }
 
 .category img {
@@ -167,6 +173,14 @@ onMounted(() => {
     margin-bottom: 20px;
 }
 
+@keyframes slide-fade-in {
+    from {
+        opacity: 0;
+        box-shadow: none;
+        transform: scale(.8) translateY(25px);
+    }
+}
+
 .articles-list {
     display: flex;
     flex-wrap: wrap;
@@ -174,6 +188,11 @@ onMounted(() => {
 }
 
 .article {
+    animation: slide-fade-in both;
+    /* 使用浏览器的视图时间线,允许动画根据视口的变化进行同步 */
+    animation-timeline: view();
+    /* 定义动画时间范围 */
+    animation-range: contain 0% contain 50%;
     width: 45%;
     margin: 10px;
 }
