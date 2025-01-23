@@ -27,7 +27,7 @@ const username = localStorage.getItem("username");
 const email = localStorage.getItem("email");
 const password = localStorage.getItem("password");
 let userType = "";
-if (username === "CLN" && email === "changbingmushao@qq.com" && password === "250420cln") {
+if (username === "CLN" && email === "changbingmushao@qq.com" && password === "mH7bNTkcrZuPAA==") {
   console.log("用户状态:管理员")
   userType = "管理"
 } else {

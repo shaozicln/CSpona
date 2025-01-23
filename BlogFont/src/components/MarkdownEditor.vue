@@ -45,6 +45,10 @@ const submitArticle = async () => {
     alert("信息不完善");
     return;
   }
+  if (categoryId.value == 2) {
+    const additionalContent = '<div style="color: rgba(0,0,0,0.6); font-size: 30px; text-align: center;"><br><br><br>----- 有关Project - Practice的一切都在 -----<br>https://github.com/shaozicln</div>';
+    content.value += additionalContent; // 在文章内容末尾追加HTML
+  }
   try {
     const formData = new FormData();
     formData.append('title', title.value)

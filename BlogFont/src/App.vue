@@ -29,4 +29,12 @@ import MyHead from './components/MyHead.vue'
   z-index: -1;
   position: fixed;
 }
+::-webkit-scrollbar {
+  width: 2px;
+  /* 垂直滚动条的宽度 */
+  height: 2px;
+  /* 水平滚动条的高度 */
+}
+
+
 </style>
