@@ -48,12 +48,12 @@ const navItems = [
 
 <style scoped>
 * {
-    font-size: 30px;
+    font-size: 26px;
 }
 
 .nav-bar {
     /* background-color: rgba(160, 191, 228, 0.566); */
-    background-color: rgba(255, 255, 255, 0.5);
+    /*background-color: rgba(255, 255, 255, 0.5);*/
     color: #000000;
     padding: 1em;
     text-align: center;

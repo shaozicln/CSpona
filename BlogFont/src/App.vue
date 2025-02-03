@@ -4,7 +4,7 @@ import MyHead from './components/MyHead.vue'
 
 <template>
   <!-- <Head id="h"></Head> -->
-  <img id="background" src="../public/Pictures/动漫背景2.jpg">
+<img id="background" src="../public/Pictures/动漫背景2.jpg"> 
   <div id="app">
     <MyHead />
     <router-view />
@@ -19,6 +19,7 @@ import MyHead from './components/MyHead.vue'
   padding: 0px;
   margin: 0px;
   font-family: cursive;
+  /*background-color: #f5f5f5;*/
 }
 
 #background {
