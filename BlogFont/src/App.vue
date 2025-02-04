@@ -18,7 +18,10 @@ import MyHead from './components/MyHead.vue'
 * {
   padding: 0px;
   margin: 0px;
-  font-family: cursive;
+  /* font-family: cursive; */
+  /* font-family:Marcellus SC, serif; */
+  font-family: Cormorant SC, serif;
+  
   /*background-color: #f5f5f5;*/
 }
 

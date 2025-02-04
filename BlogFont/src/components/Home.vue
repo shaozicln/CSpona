@@ -6,51 +6,59 @@
                 <span class="blink">|</span>
             </div>
             <div class="welcome-container">
-                <h3>----------Welcome----------</h3>
+                <p>----------Welcome----------</p>
             </div>
         </div>
-        <div class="markdown-content">
-            <h1>关于我</h1>
-            <p>你好，我是一个热爱编程的开发者。专注于Web开发，熟悉 Vue.js 和 Go 语言。喜欢探索新技术并将其应用于实际项目中。</p>
-            <div class="profile-info">
-                <div class="profile-item">
-                    <i class="fas fa-microscope"></i>
-                    <span>🔭 I'm 长柄木勺, a sophomore student</span>
-                </div>
-                <div class="profile-item">
-                    <i class="fas fa-seedling"></i>
-                    <span>🌱 I am learning computer technology related content and basic algorithmic knowledge</span>
-                </div>
-                <div class="profile-item">
-                    <i class="fas fa-smile"></i>
-                    <span>😄 Tech stack: Javascript Vue Go Gin Mysql</span>
-                </div>
-                <div class="profile-item">
-                    <i class="fas fa-comment"></i>
-                    <span>💬 I've done: two front-end blogs, some web mini-games and fun little features</span>
-                </div>
-                <div class="profile-item">
-                    <i class="fas fa-lightbulb"></i>
-                    <span>🤔 Current mini-goal: algorithmic fundamentals and general-purpose technical
-                        implementations</span>
-                </div>
-                <div class="profile-item">
-                    <i class="fas fa-bolt"></i>
-                    <span>⚡ Hobbies: gaming, watching anime and travelling, love to see different stories and
-                        landscapes</span>
-                </div>
-                <div class="profile-item">
-                    <i class="fas fa-envelope"></i>
-                    <span>📫 How to reach me: changbingmushao@qq.com
-                    </span>
+        <div class="myself">
+            <div class="me">
+                <Author />
+            </div>
+            <div class="markdown-content">
+                <h1>关于我</h1>
+                <p>你好，我是一个热爱编程的开发者。专注于Web开发，熟悉 Vue.js 和 Go 语言。喜欢探索新技术并将其应用于实际项目中。</p>
+                <div class="profile-info">
+                    <div class="profile-item">
+                        <i class="fas fa-microscope"></i>
+                        <span>🔭 I'm 长柄木勺, a sophomore student</span>
+                    </div>
+                    <div class="profile-item">
+                        <i class="fas fa-seedling"></i>
+                        <span>🌱 I am learning computer technology related content and basic algorithmic
+                            knowledge</span>
+                    </div>
+                    <div class="profile-item">
+                        <i class="fas fa-smile"></i>
+                        <span>😄 Tech stack: Javascript Vue Go Gin Mysql</span>
+                    </div>
+                    <div class="profile-item">
+                        <i class="fas fa-comment"></i>
+                        <span>💬 I've done: two front-end blogs, some web mini-games and fun little features</span>
+                    </div>
+                    <div class="profile-item">
+                        <i class="fas fa-lightbulb"></i>
+                        <span>🤔 Current mini-goal: algorithmic fundamentals and general-purpose technical
+                            implementations</span>
+                    </div>
+                    <div class="profile-item">
+                        <i class="fas fa-bolt"></i>
+                        <span>⚡ Hobbies: gaming, watching anime and travelling, love to see different stories and
+                            landscapes</span>
+                    </div>
+                    <div class="profile-item">
+                        <i class="fas fa-envelope"></i>
+                        <span>📫 How to reach me: changbingmushao@qq.com
+                        </span>
+                    </div>
                 </div>
             </div>
         </div>
         <div class="contact-info">
-            <span><font-awesome-icon :icon="['fab', 'github']"></font-awesome-icon> GitHub：<a
+            <span>----------欢迎你来到我的个人博客!----------</span>
+            <br><br>
+            <!-- <span><font-awesome-icon :icon="['fab', 'github']"></font-awesome-icon> GitHub：<a
                     href="https://github.com/shaozicln" target="_blank">shaozicln</a></span>
             <span><font-awesome-icon :icon="['fas', 'envelope']"></font-awesome-icon> 邮箱：<a
-                    href="mailto:changbingmushao@qq.com">changbingmushao@qq.com</a></span>
+                    href="mailto:changbingmushao@qq.com">changbingmushao@qq.com</a></span> -->
             <span>备案号：</span>
         </div>
     </div>
@@ -61,6 +69,7 @@
 import { getCurrentInstance } from 'vue';
 const instance = getCurrentInstance();
 const URL = instance?.appContext.config.globalProperties.URL;
+import Author from '@/components/Author.vue';
 
 import { ref, onMounted, onUnmounted, computed } from 'vue';
 import { library } from '@fortawesome/fontawesome-svg-core'
@@ -122,11 +131,18 @@ onUnmounted(() => {
 
 
 <style scoped>
+.myself {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+}
+
 .home-container {
     display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
 }
 
 .welcome-container {
@@ -134,8 +150,8 @@ onUnmounted(() => {
     top: 62%;
     left: 50%;
     transform: translate(-50%, -50%);
-    font-size: 15px;
-    font-family: "楷体";
+    font-size: 30px;
+    font-family: Cormorant SC, serif;
     text-align: center;
     /* 确保文本居中 */
 }
@@ -178,9 +194,13 @@ onUnmounted(() => {
     }
 }
 
+.me {
+    margin: 25px;
+}
+
 /* 美化 markdownContent 的样式 */
 .markdown-content {
-    margin-top: 20px;
+    margin: 25px;
     font-size: 18px;
     font-family: "楷体";
     line-height: 1.6;
@@ -238,30 +258,30 @@ onUnmounted(() => {
 }
 
 .contact-info {
-    width: 600px;
+    width: 100vw;
     /* display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center; */
-    margin: 80px;
+    margin-top: 100px;
+    margin-bottom: 0px;
     font-size: 20px;
     color: #494949;
     /* 灰色字 */
     text-align: center;
-    background-color: rgba(255, 255, 255, 0.741);
+    background-color: rgba(255, 255, 255, 0.7);
     /* 灰色背景 */
-    padding: 20px;
-    border-radius: 16px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    padding: 40px;
+    /* border-radius: 16px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); */
 }
 
 .contact-info span {
     margin: 5px 0;
 }
 
-.contact-info a {
+/* .contact-info a {
     color: #00000053;
-    /* 链接颜色 */
     text-decoration: none;
 }
 
@@ -272,6 +292,5 @@ onUnmounted(() => {
 .contact-info i {
     margin-right: 5px;
     color: #ad0e0e;
-    /* 图标颜色 */
-}
+} */
 </style>

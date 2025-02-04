@@ -1,6 +1,11 @@
 <template>
   <div class="left-side">
-    <input v-model="categoryId" type="number" placeholder="分类Id">
+    <select v-model="selectedCategoryId" @change="updateCategoryId">
+      <option value="" disabled>请选择分类</option>
+      <option v-for="category in categories" :key="category.Id" :value="category.Id">
+        {{ category.Name }}
+      </option>
+    </select>
     <input @change="fileChange" type="file" placeholder="来一张文章底图">
     <input v-model="title" type="text" placeholder="输入标题" />
     <button class="button" @click="submitArticle">提交</button>
@@ -17,8 +22,14 @@ import { getCurrentInstance } from 'vue';
 const instance = getCurrentInstance();
 const URL = instance?.appContext.config.globalProperties.URL;
 
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { marked } from 'marked';
+
+import { useRoute } from 'vue-router';
+
+const route = useRoute();
+const categories = ref([]);
+const selectedCategoryId = ref('');
 const title = ref('')
 const content = ref('')
 const categoryId = ref('')
@@ -38,6 +49,26 @@ function fileChange(event) {
   } else {
     console.log('没有选择文件');
   }
+}
+
+// 获取分类数据
+const fetchCategories = async () => {
+  try {
+    const response = await fetch(`${URL}/categories`); // 替换为实际的 API 地址
+    const data = await response.json();
+    categories.value = data.data;
+    console.log(data.data);
+    
+  } catch (error) {
+    console.error('Failed to fetch categories:', error);
+  }
+}
+
+// 更新 categoryId
+function updateCategoryId() {
+  categoryId.value = selectedCategoryId.value;
+  console.log(selectedCategoryId.value);
+  
 }
 
 const submitArticle = async () => {
@@ -75,6 +106,9 @@ const submitArticle = async () => {
   }
 }
 
+onMounted(() => {
+  fetchCategories();
+});
 </script>
 
 <style scoped>

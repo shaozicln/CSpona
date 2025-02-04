@@ -13,7 +13,7 @@
         <div class="articles">
             <!-- 文章分类 -->
             <div class="article-category" v-for="(category, index) in categories" :key="'category-' + category.Id">
-                <h2 :id="'category-' + index">{{ category.Name }}</h2>
+                <h3 :id="'category-' + index">{{ category.Name }}</h3>
                 <!-- 如果当前分类下有文章，则渲染文章列表 -->
                 <div class="articles-list" v-if="category.Articles.length > 0">
                     <article class="article" v-for="(article, articleIndex) in category.Articles"

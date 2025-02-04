@@ -1,21 +1,41 @@
 <template>
     <div class="info-box">
         <img :src="'../Public/Pictures/' + authorAvatar" alt="Author Avatar" id="avatar">
+        <div class="author-info">
         <ul>
             <li>网站作者: {{ author }}</li>
-            <li>邮箱: {{ email }}</li>
-            <li>gitHub: {{ gitHub }}</li>
+            <li><font-awesome-icon :icon="['fas', 'envelope']"></font-awesome-icon> 邮箱：<a
+                    href="mailto:changbingmushao@qq.com">{{ email }}</a></li>
+            <li><font-awesome-icon :icon="['fab', 'github']"></font-awesome-icon> gitHub：<a
+                    href="https://github.com/shaozicln" target="_blank">{{ gitHub }}</a> </li>
             <li>性别: {{ sex }}</li>
             <li>大学: {{ university }}</li>
             <li>专业: {{ major }}</li>
             <li>现居地: {{ address }}</li>
         </ul>
+        </div>
     </div>
 </template>
 
 <script setup>
 // 获取全局URL属性
 import { getCurrentInstance } from 'vue';
+
+import { library } from '@fortawesome/fontawesome-svg-core'
+import { faGithub } from '@fortawesome/free-brands-svg-icons'
+import { faMicroscope, faSeedling, faSmile, faComment, faLightbulb, faBolt, faEnvelope } from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
+
+library.add(faGithub, faEnvelope)
+
+// 注册 FontAwesomeIcon 组件
+import { defineComponent } from 'vue';
+defineComponent({
+    components: {
+        FontAwesomeIcon
+    }
+});
+
 const instance = getCurrentInstance();
 const URL = instance?.appContext.config.globalProperties.URL;
 
@@ -24,7 +44,7 @@ import { ref } from 'vue'
 const authorAvatar = ref('35.jpg')
 const author = ref('长柄木勺')
 const email = ref('changbingmushao@qq.com')
-const gitHub = ref('https://github.com/shaozicln')
+const gitHub = ref('shaozicln')
 const sex = ref('女')
 const university = ref('东北农业大学')
 const major = ref('计算机科学与技术')
@@ -39,6 +59,7 @@ const address = ref('中国-哈尔滨')
     border-radius: 10px;
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
     text-align: center;
+    width:300px;
 }
 
 #avatar {
@@ -53,6 +74,27 @@ const address = ref('中国-哈尔滨')
     list-style: none;
     padding: 0;
     margin: 0;
-    font-size: 25px;
+    font-size: 20px;
+}
+
+.info-box ul li{
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    font-size: 20px;
+    a:link{
+        color:rgba(0, 0, 0, 0.7);
+    }
+    a:visited{
+        color: rgba(0, 0, 0, 0.7);
+    }
+    a:hover{
+        color: rgba(0, 0, 0, 0.7);
+    }
+}
+
+.author-info {
+    list-style-type: none;
+    padding: 0;
 }
 </style>
