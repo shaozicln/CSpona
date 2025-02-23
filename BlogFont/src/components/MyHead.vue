@@ -36,7 +36,7 @@ if (username === "CLN" && email === "changbingmushao@qq.com" && password === "mH
 }
 
 const navItems = [
-  { to: '/login', text: 'ShaoのBlog' },
+  { to: '/login', text: 'CSpona:)' },
   { to: '/', text: '首页' },
   { to: '/message-board', text: '留言/友链' },
   { to: '/articles', text: '文章' },

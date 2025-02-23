@@ -15,6 +15,7 @@ import Application from './components/Application.vue'
 import ArticlesManage from './components/ArticlesManage.vue'
 import ArticleContent from './components/ArticleContent.vue'
 import PictureUpload from './components/PictureUpload.vue'
+import Slide from './components/Slide.vue'
 
 const routes = [
     {
@@ -99,6 +100,11 @@ const routes = [
         path: '/picture-upload',
         name: 'PictureUpload',
         component: PictureUpload
+    },
+    {
+        path: '/slide',
+        name: 'Slide',
+        component: Slide
     },
 ]
 

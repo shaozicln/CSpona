@@ -53,7 +53,7 @@
             </div>
         </div>
         <div class="contact-info">
-            <span>----------欢迎你来到我的个人博客!----------</span>
+            <span>----------欢迎来到CSpona!----------</span>
             <br><br>
             <!-- <span><font-awesome-icon :icon="['fab', 'github']"></font-awesome-icon> GitHub：<a
                     href="https://github.com/shaozicln" target="_blank">shaozicln</a></span>

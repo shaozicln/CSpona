@@ -34,6 +34,8 @@
     </div>
 </template>
 
+<!-- 增加算法类和实习经验类 -->
+
 <script setup>
 // 获取全局URL属性
 import { getCurrentInstance } from 'vue';

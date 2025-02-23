@@ -15,8 +15,10 @@
     "@fortawesome/vue-fontawesome": "^3.0.8",
     "blogfont": "file:",
     "chart.js": "^4.4.3",
+    "github-markdown-css": "^5.8.1",
     "highlight.js": "^11.11.1",
-    "marked": "^14.1.4",
+    "markdown-loader": "^8.0.0",
+    "marked": "^15.0.6",
     "vue": "^3.4.29",
     "vue-router": "^4.4.2"
   },
