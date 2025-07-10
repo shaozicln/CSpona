@@ -5,7 +5,7 @@
             <div class="category" v-for="(category, index) in categories" :key="category.Id"
                 @click="scrollToCategory(index)">
                 <div class="category-content">
-                    <img :src="'../Public/Pictures/' + category.Img" alt="图片丢失了!">
+                    <img :src="getImageUrl(category.Img)" alt="图片丢失了!">
                     <span class="category-name">{{ category.Name }} ({{ getArticleCounts()[category.Name] }})</span>
                 </div>
             </div>
@@ -19,7 +19,7 @@
                     <article class="article" v-for="(article, articleIndex) in category.Articles"
                         :key="'article-' + articleIndex">
                         <div class="article-content">
-                            <img @click="getArticleContent(article.Id)" :src="'../Public/Pictures/' + article.Img"
+                            <img @click="getArticleContent(article.Id)" :src="getImageUrl(article.Img)"
                                 alt="文章图片丢失了!">
                             <span class="article-name">{{ article.Title }}</span>
                         </div>
@@ -49,6 +49,11 @@ import { ref, onMounted } from 'vue';
 
 const categories = ref([]);
 
+
+const { proxy } = getCurrentInstance()
+const getImageUrl = (imgName) => {
+  return `${proxy.$imageBaseUrl}${imgName}`
+}
 // 获取分类和文章数据
 const fetchCategories = async () => {
     try {

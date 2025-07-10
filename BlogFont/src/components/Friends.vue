@@ -6,7 +6,7 @@
             <ul>
                 <li v-for="friend in friends" :key="friend.Id">
                     <a :href="friend.Web" target="_blank" class="aaa">
-                        <img :src="'../Public/Pictures/' + friend.Img" :alt="friend.Name">
+                        <img :src="getImageUrl(friend.Img)" :alt="friend.Name">
                         <span class="name">
                             {{ friend.Name }}<br>
                             {{ friend.Web }}<br>
@@ -31,6 +31,12 @@ const instance = getCurrentInstance();
 const URL = instance?.appContext.config.globalProperties.URL;
 
 import { ref, onMounted } from 'vue'
+
+const { proxy } = getCurrentInstance()
+const getImageUrl = (imgName) => {
+  return `${proxy.$imageBaseUrl}${imgName}`
+}
+
 
 const friends = ref([])
 const sendVisible = ref(false)

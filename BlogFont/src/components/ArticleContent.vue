@@ -1,6 +1,6 @@
 <template>
     <div class="container">
-        <img :src="'../Public/Pictures/' + article.Img" alt="" class="bg-img" />
+        <img :src="getImageUrl(article.Img)" alt="" class="bg-img" />
         <div class="grid-container">
             <div class="left-side">
                 <transition name="fade">
@@ -9,11 +9,6 @@
                         <AuthorBack />
                     </div>
                 </transition>
-                <!-- <transition name="avatar">
-                    <div class="avatar-container"  v-if="isAvatarVisible" @click="toggleAuthor">
-                        <img :src="'../Public/Pictures/' + authorAvatar" alt="Author Avatar" class="avatar" />
-                    </div>
-                </transition> -->
                 <transition name="toc-transition">
                     <div class="toc-box">
                         <div id="toc-title">内容索引</div>
@@ -175,6 +170,11 @@ const renderedContent = computed(() => {
 function isUrl(text) {
     const urlPattern = /https?:\/\/[^\s]+/; // 匹配 http:// 或 https:// 开头的字符串
     return urlPattern.test(text);
+}
+
+const { proxy } = getCurrentInstance()
+const getImageUrl = (imgName) => {
+  return `${proxy.$imageBaseUrl}${imgName}`
 }
 
 function TimeFormat(time) {

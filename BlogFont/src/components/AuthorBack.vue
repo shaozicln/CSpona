@@ -3,7 +3,7 @@
     <transition name="fade">
       <div v-if="show" class="mask" @click.self="hide">
         <div class="info-box">
-          <img :src="'../Public/Pictures/' + authorAvatar" alt="Author Avatar" id="avatar">
+          <img :src="getImageUrl(authorAvatar)" alt="Author Avatar" id="avatar">
           <ul>
             <li>网站作者: {{ author }}</li>
             <li><font-awesome-icon :icon="['fas', 'envelope']"></font-awesome-icon> 邮箱：<a
@@ -19,7 +19,7 @@
       </div>
     </transition>
   </teleport>
-  <img :src="'../Public/Pictures/' + authorAvatar" alt="Author Avatar" id="avatar" @click="show = true">
+  <img :src="getImageUrl(authorAvatar)" alt="Author Avatar" id="avatar" @click="show = true">
 </template>
   
   <script setup>
@@ -27,6 +27,12 @@
   import { getCurrentInstance } from 'vue';
   const instance = getCurrentInstance();
   const URL = instance?.appContext.config.globalProperties.URL;
+
+  
+const { proxy } = getCurrentInstance()
+const getImageUrl = (imgName) => {
+  return `${proxy.$imageBaseUrl}${imgName}`
+}
 
   import { library } from '@fortawesome/fontawesome-svg-core'
   import { faGithub } from '@fortawesome/free-brands-svg-icons'

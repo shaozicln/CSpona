@@ -12,7 +12,7 @@ func InitRouter() *gin.Engine {
 	gin.SetMode(utils.AppMode)
 	r := gin.Default()
 	r.Use(middleware.Cors())
-	router := r.Group("api")
+	router := r.Group("/api")
 	{
 		//...登陆验证路由... Login.go
 		router.POST("/login", api.Login)
@@ -65,7 +65,6 @@ func InitRouter() *gin.Engine {
 		router.GET("/advice", api.GetAdvice)
 		router.POST("/advice", api.PostAdvice)
 	}
-
 	r.SetTrustedProxies([]string{utils.DbHost})
 	r.Run(utils.HttpPort)
 	return r

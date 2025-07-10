@@ -50,7 +50,7 @@
                                 <p>W：{{ application.Web }}</p>
                                 <p>I：{{ application.Introduction }}</p>
                             </div>
-                            <img :src="'../Public/Pictures/' + application.Img">
+                            <img :src="getImageUrl(application.Img)">
                         </div>
                     </div>
                 </div>
@@ -69,6 +69,12 @@ import AuthorBack from './AuthorBack.vue'
 import { ref } from 'vue';
 import MarkdownEditor from './MarkdownEditor.vue';
 import { nextTick } from 'vue';
+
+
+const { proxy } = getCurrentInstance()
+const getImageUrl = (imgName) => {
+  return `${proxy.$imageBaseUrl}${imgName}`
+}
 
 const title = ref('');
 const content = ref('');

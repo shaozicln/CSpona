@@ -4,7 +4,7 @@ import MyHead from './components/MyHead.vue'
 
 <template>
   <!-- <Head id="h"></Head> -->
-  <img id="background" src="../public/Pictures/动漫背景2.jpg">
+  <img id="background" src="../public/Pictures/background.jpg">
   <div id="app">
     <MyHead />
     <router-view />

@@ -1,6 +1,6 @@
 <template>
     <div class="info-box">
-        <img :src="'../Public/Pictures/' + authorAvatar" alt="Author Avatar" id="avatar">
+        <img :src="getImageUrl(authorAvatar)" alt="Author Avatar" id="avatar">
         <div class="author-info">
         <ul>
             <li>网站作者: {{ author }}</li>
@@ -25,6 +25,12 @@ import { library } from '@fortawesome/fontawesome-svg-core'
 import { faGithub } from '@fortawesome/free-brands-svg-icons'
 import { faMicroscope, faSeedling, faSmile, faComment, faLightbulb, faBolt, faEnvelope } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
+
+
+const { proxy } = getCurrentInstance()
+const getImageUrl = (imgName) => {
+  return `${proxy.$imageBaseUrl}${imgName}`
+}
 
 library.add(faGithub, faEnvelope)
 

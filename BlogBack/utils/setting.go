@@ -2,7 +2,7 @@ package utils
 
 import (
 	"fmt"
-	"gopkg.in/ini.v1"
+	"github.com/go-ini/ini"
 )
 
 var (
@@ -26,11 +26,19 @@ func init() {
 }
 
 func LoadServer(file *ini.File) {
-	AppMode = file.Section("server").Key("AppMode").MustString("debug") //取不到值就返回debug
+	if file == nil {
+		fmt.Println("配置文件未加载成功")
+		return
+	}
+	AppMode = file.Section("server").Key("AppMode").MustString("debug")
 	HttpPort = file.Section("server").Key("HttpPort").MustString(":3000")
 }
 
 func LoadData(file *ini.File) {
+	if file == nil {
+		fmt.Println("配置文件未加载成功")
+		return
+	}
 	Db = file.Section("database").Key("Db").MustString("debug")
 	DbHost = file.Section("database").Key("DbHost").MustString("localhost")
 	DbPort = file.Section("database").Key("DbPort").MustString("3306")
