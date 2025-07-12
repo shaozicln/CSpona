@@ -65,9 +65,9 @@ import { getCurrentInstance } from 'vue';
 const instance = getCurrentInstance();
 const URL = instance?.appContext.config.globalProperties.URL;
 
-import AuthorBack from './AuthorBack.vue'
+import AuthorBack from '../Author/AuthorBack.vue'
 import { ref } from 'vue';
-import MarkdownEditor from './MarkdownEditor.vue';
+import MarkdownEditor from '../Manage/MarkdownEditor.vue';
 import { nextTick } from 'vue';
 
 

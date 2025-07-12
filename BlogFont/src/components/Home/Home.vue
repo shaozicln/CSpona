@@ -84,7 +84,7 @@
 import { getCurrentInstance } from "vue";
 const instance = getCurrentInstance();
 const URL = instance?.appContext.config.globalProperties.URL;
-import Author from "@/components/Author.vue";
+import Author from "@/components/Author/Author.vue";
 
 import { ref, onMounted, onUnmounted, computed } from "vue";
 import { library } from "@fortawesome/fontawesome-svg-core";

@@ -26,12 +26,12 @@
 
 <script setup>
 // 获取全局URL属性
-import { getCurrentInstance } from 'vue';
 const instance = getCurrentInstance();
 const URL = instance?.appContext.config.globalProperties.URL;
 
 import { ref, onMounted } from 'vue'
 
+import { getCurrentInstance } from 'vue';
 const { proxy } = getCurrentInstance()
 const getImageUrl = (imgName) => {
   return `${proxy.$imageBaseUrl}${imgName}`

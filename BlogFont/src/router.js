@@ -1,20 +1,19 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import Home from './components/Home.vue'//首页
-import MessageBoard from './components/MessageBoard.vue'//留言/友链
-import Sort from './components/Sort.vue'
-import Articles from './components/Articles.vue'
-import Login from './components/Login.vue'
-import Register from './components/Register.vue'
-import Back from './components/Back.vue'
-import Search from './components/Search.vue'
-import Feedback from './components/Feedback.vue'
-import Author from './components/Author.vue'
-import AuthorBack from './components/AuthorBack.vue'
-import Advice from './components/Advice.vue'
-import Application from './components/Application.vue'
-import ArticlesManage from './components/ArticlesManage.vue'
-import ArticleContent from './components/ArticleContent.vue'
-import PictureUpload from './components/PictureUpload.vue'
+import Home from './components/Home/Home.vue'//首页
+import MessageBoard from './components/Friends/MessageBoard.vue'//留言/友链
+import Sort from './components/Statistics/Sort.vue'
+import Articles from './components/Article/Articles.vue'
+import Login from './components/Login/Login.vue'
+import Register from './components/Login/Register.vue'
+import Back from './components/Back/Back.vue'
+import Search from './components/Search/Search.vue'
+import Feedback from './components/Back/Feedback.vue'
+import Author from './components/Author/Author.vue'
+import AuthorBack from './components/Author/AuthorBack.vue'
+import Advice from './components/Manage/Advice.vue'
+import Application from './components/Manage/Application.vue'
+import ArticlesManage from './components/Manage/ArticlesManage.vue'
+import ArticleContent from './components/Article/ArticleContent.vue'
 import Slide from './components/Slide.vue'
 
 const routes = [
@@ -89,17 +88,12 @@ const routes = [
         component: ArticlesManage
     },
     {
-        path: '/articleContent',
+        path: '/articleContent/:articleId',
         name: 'ArticleContent',
         component: ArticleContent,
         meta: {
             hideMyHead: true
         }
-    },
-    {
-        path: '/picture-upload',
-        name: 'PictureUpload',
-        component: PictureUpload
     },
     {
         path: '/slide',

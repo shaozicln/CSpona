@@ -45,7 +45,7 @@ const getImageUrl = (imgName) => {
   return `${proxy.$imageBaseUrl}${imgName}`
 }
 
-import Author from './Author.vue'
+import Author from '../Author/Author.vue'
 
 import { ref } from 'vue'
 

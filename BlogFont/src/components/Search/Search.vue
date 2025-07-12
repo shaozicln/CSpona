@@ -45,8 +45,6 @@ import { getCurrentInstance } from 'vue';
 const instance = getCurrentInstance();
 const URL = instance?.appContext.config.globalProperties.URL;
 
-import Feedback from './Feedback.vue'
-import ArticleContent from './ArticleContent.vue'
 import { ref, onMounted } from 'vue'
 
 import { useRouter } from 'vue-router'

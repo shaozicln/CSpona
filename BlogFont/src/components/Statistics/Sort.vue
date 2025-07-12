@@ -1,11 +1,19 @@
 <template>
-    <div>
-        <button @click="changeChartType" id="button">换一种统计方式？</button>
-        <canvas id="chart" width="800" height="619" viewBox="0 0 800 619"></canvas>
+    <div class="dashboard-container">
+        <!-- 日历组件 -->
+        <Calendar class="calendar-component" />
+        
+        <!-- 图表区域 -->
+        <div class="chart-area">
+            <button @click="changeChartType" id="chart-button">换一种统计方式？</button>
+            <canvas id="chart" width="800" height="619"></canvas>
+        </div>
     </div>
 </template>
 
 <script setup>
+import Calendar from './Calendar.vue';
+
 // 获取全局URL属性
 import { getCurrentInstance } from 'vue';
 const instance = getCurrentInstance();
@@ -199,18 +207,32 @@ function changeChartType() {
 }
 </script>
 
-<style scope>
-#chart {
-    /* height: 88.5vh; */
-    padding: 60px;
-    overflow: auto;
-    background-color: rgba(255, 255, 255, 0.3);
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+<style scoped>
+.dashboard-container {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    padding: 20px;
 }
 
-#button {
+.calendar-component {
+    background-color: rgba(255, 255, 255, 0.3);
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    padding: 15px;
+}
+
+.chart-area {
+    position: relative;
+    background-color: rgba(255, 255, 255, 0.3);
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    padding: 60px;
+}
+
+#chart-button {
     position: absolute;
-    top: 120px;
+    top: 20px;
     left: 20px;
     border-radius: 20px;
     width: 170px;
@@ -218,5 +240,12 @@ function changeChartType() {
     background-color: rgba(97, 138, 184, 0.684);
     font-size: 17px;
     z-index: 1;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+#chart-button:hover {
+    background-color: rgba(77, 118, 164, 0.784);
 }
 </style>
