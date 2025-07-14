@@ -27,7 +27,7 @@ const URL = instance?.appContext.config.globalProperties.URL;
 import { ref } from 'vue';
 
 const username = ref('');
-const email = ref('');
+const newEmail = ref('');
 const password = ref('');
 const roleQx = ref('B');
 
@@ -54,7 +54,7 @@ const createUser = async () => {
 
         const formData = new FormData();
         formData.append('username', username.value)
-        formData.append('email', email.value)
+        formData.append('email', newEmail.value)
         formData.append('password', password.value)
         formData.append('role_qx', roleQx.value)
         formData.append('avatar', file.value)

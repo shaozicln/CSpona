@@ -12,6 +12,9 @@ type Friend struct {
 	Web          string `gorm:"type:varchar(255)" column:"web"`
 	Introduction string `gorm:"type:varchar(255)" column:"introduction"`
 	Img          string `gorm:"type:varchar(255)" column:"img"`
+	Avatar       string `gorm:"type:varchar(255)" column:"avatar"`
+	Background       string `gorm:"type:varchar(255)" column:"background"`
+	Description  string `gorm:"type:varchar(255)" column:"description"`
 }
 
 func (Friend) TableName() string {
@@ -62,6 +65,9 @@ func PutFriend(c *gin.Context) {
 		Web:          friend.Web,
 		Introduction: friend.Introduction,
 		Img:          friend.Img,
+		Avatar:		friend.Avatar,
+		Background:	friend.Background,
+		Description:friend.Description,
 	}); result.Error != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
 	} else {

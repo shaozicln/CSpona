@@ -184,6 +184,9 @@ const applicationPost = async (index) => {
                 web: newFriendsWeb.value[0].Web,
                 introduction: newFriendsWeb.value[0].Introduction,
                 img: newFriendsWeb.value[0].Img,
+                avatar: newFriendsWeb.value[0].Avatar,
+                background: newFriendsWeb.value[0].Background,
+                description: newFriendsWeb.value[0].Description,
             }),
         })
         const data = await response.json()

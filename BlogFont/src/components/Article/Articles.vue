@@ -138,11 +138,6 @@ onMounted(() => {
   cursor: pointer;
   margin-bottom: 10px;
   position: relative;
-  /* animation: slide-fade-in both;
-    /* 使用浏览器的视图时间线,允许动画根据视口的变化进行同步 */
-  /*animation-timeline: view();*/
-  /* 定义动画时间范围 */
-  /*animation-range: contain 0% contain 50%;*/
 }
 
 .category img {
@@ -150,7 +145,12 @@ onMounted(() => {
   height: 18vh;
   display: block;
   margin-bottom: 5px;
+  border-radius: 20px;
+
+  object-fit: cover;        /* 保持比例，覆盖容器 */
+  object-position: center;  /* 居中裁剪 */
 }
+
 
 .category-content {
   position: relative;

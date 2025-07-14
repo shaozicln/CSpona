@@ -1,13 +1,13 @@
 package api
 
 import (
+	"BlogBack/utils"
 	"github.com/gin-gonic/gin"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
-	"BlogBack/utils"
 )
 
 type Application struct {
@@ -18,6 +18,9 @@ type Application struct {
 	Web          string `gorm:"type:varchar(255)" column:"web"`
 	Introduction string `gorm:"type:varchar(255)" column:"introduction"`
 	Img          string `gorm:"type:varchar(255)" column:"img"`
+	Avatar       string `gorm:"type:varchar(255)" column:"avatar"`
+	Background   string `gorm:"type:varchar(255)" column:"background"`
+	Description  string `gorm:"type:varchar(255)" column:"description"`
 }
 
 func (Application) TableName() string {
@@ -43,26 +46,36 @@ func GetApplication(c *gin.Context) {
 
 func PostApplication(c *gin.Context) {
 	var application Application
-	//获取文件，错误处理
-	file, err := c.FormFile("img")
-	if err != nil {
-		c.JSON(500, gin.H{"error": "无法获取文件"})
-		return
-	}
-	baseDir := utils.GetImageBaseDir()          //定义基本目录
-	filename := filepath.Base(file.Filename)           //获取上传的文件名
-	savePath := filepath.Join(baseDir, filename)       //连接字段，形成存储路径
-	savePath = strings.ReplaceAll(savePath, "\\", "/") // 将路径用正斜杠保存，兼容不同操作系统，同时方便前端读取
 
-	_ = os.MkdirAll(baseDir, os.ModePerm) //创建保存路径所在目录，目录存在则忽略，同时忽略了错误处理
-	_ = c.SaveUploadedFile(file, savePath)
+	// 获取文件
+	img, _ := c.FormFile("img")
+	background, _ := c.FormFile("background")
 
-	application.Img = filename            //只存储文件名字
-	application.Name = c.PostForm("name") //数据库其他字段和数据
+	baseDir := utils.GetImageBaseDir()
+	_ = os.MkdirAll(baseDir, os.ModePerm)
+
+	// 处理图片文件
+	imgname := filepath.Base(img.Filename)
+	savePath := filepath.Join(baseDir, imgname)
+	savePath = strings.ReplaceAll(savePath, "\\", "/")
+	_ = c.SaveUploadedFile(img, savePath)
+
+	// 处理背景文件
+	backgroundname := filepath.Base(background.Filename)
+	savePath2 := filepath.Join(baseDir, backgroundname)
+	savePath2 = strings.ReplaceAll(savePath2, "\\", "/")
+	_ = c.SaveUploadedFile(background, savePath2)
+
+	// 填充数据
+	application.Name = c.PostForm("name")
 	application.Username = c.PostForm("username")
 	application.Email = c.PostForm("email")
 	application.Web = c.PostForm("web")
 	application.Introduction = c.PostForm("introduction")
+	application.Img = imgname
+	application.Avatar = c.PostForm("avatar")
+	application.Background = backgroundname
+	application.Description = c.PostForm("description")
 
 	db.Create(&application)
 	c.JSON(200, gin.H{"message": "created successfully", "data": application})
