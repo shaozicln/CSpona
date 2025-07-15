@@ -56,7 +56,7 @@ func PostUser(c *gin.Context) {
 		c.JSON(500, gin.H{"error": "无法获取文件"})
 		return
 	}
-	baseDir := utils.GetImageBaseDir()         //定义基本目录
+	baseDir := utils.GetImageBaseDir()       //定义基本目录
 	filename := filepath.Base(file.Filename)           //获取上传的文件名
 	savePath := filepath.Join(baseDir, filename)       //连接字段，形成存储路径
 	savePath = strings.ReplaceAll(savePath, "\\", "/") // 将路径用正斜杠保存，兼容不同操作系统，同时方便前端读取

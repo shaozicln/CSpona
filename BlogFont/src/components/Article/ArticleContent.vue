@@ -43,6 +43,9 @@
       </div>
     </div>
   </div>
+  <div class="comment-box">
+    <Comments :article-id="articleId" />
+  </div>
 </template>
 
 <!-- 改正：
@@ -70,6 +73,11 @@
 -->
 
 <script setup>
+import Comments from "./Comments.vue";
+import { useUserStore } from "@/stores/user";
+const userStore = useUserStore();
+const currentUserId = ref(localStorage.getItem("userId") || 0);
+
 // 获取全局URL属性
 import { getCurrentInstance } from "vue";
 import AuthorBack from "../Author/AuthorBack.vue";
@@ -91,6 +99,7 @@ const loadArticleId = () => {
   // 解码Base64
   const decodedId = parseInt(window.atob(route.params.articleId), 10);
   articleId.value = decodedId;
+  localStorage.setItem("articleId", decodedId);
 };
 // 监听路由变化
 watch(
@@ -99,6 +108,22 @@ watch(
     articleId.value = newId;
   }
 );
+
+import { useArticleStore } from '@/stores/article';
+const articleStore = useArticleStore();
+
+watch(
+  () => route.params.articleId,
+  async (newId) => {
+    if (newId) {
+      const decodedId = parseInt(window.atob(newId), 10);
+      articleStore.setArticleId(decodedId); // 更新到Pinia
+      // ...加载文章内容的逻辑
+    }
+  },
+  { immediate: true }
+);
+
 
 // 加载新文章内容
 const article = ref("");
@@ -175,10 +200,9 @@ const renderedContent = computed(() => {
       const slug = `${slugBase}-${headingCounter[slugBase] || 0}`; // 添加计数器
       headingCounter[slugBase] = (headingCounter[slugBase] || 0) + 1; // 更新计数器
 
-      toc.value.push({ slug, text: plainText, level }); 
+      toc.value.push({ slug, text: plainText, level });
     }
   });
-
 
   return content; // 返回完整的渲染内容
 });
@@ -211,7 +235,6 @@ onMounted(async () => {
     const response = await fetch(`${URL}/path-to-article/` + articleId.value);
     const data = await response.json();
     article.value = data.data;
-   
   } catch (error) {
     console.error("Failed to fetch categories:", error);
   }

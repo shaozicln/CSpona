@@ -42,12 +42,12 @@
           <div class="file-input-group">
             <label>封面展示:</label>
             <input @change="coverChange" type="file" accept="image/*" />
-            <span v-if="coverFile">{{ coverFile.name }}</span>
+           
           </div>
           <div class="file-input-group">
             <label>网站背景:</label>
             <input @change="backgroundChange" type="file" accept="image/*" />
-            <span v-if="backgroundFile">{{ backgroundFile.name }}</span>
+           
           </div>
           <br />
           <button @click="createApplication" class="button">提交</button>

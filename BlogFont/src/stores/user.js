@@ -12,6 +12,7 @@ export const useUserStore = defineStore("user", () => {
   const password = ref("");
   const email = ref("");
   const avatar = ref("");
+  const userQx = ref("");
   const newUsername = ref("");
   const newEmail = ref("");
   const newPassword = ref("");
@@ -67,11 +68,14 @@ export const useUserStore = defineStore("user", () => {
         const username = data.username;
         const email = data.email;
         const avatar = data.avatar;
+        const qx = data.qx;
+        console.log(data);
 
         localStorage.setItem("userId", userId);
         localStorage.setItem("username", username);
         localStorage.setItem("email", email);
         localStorage.setItem("avatar", avatar);
+        localStorage.setItem("userQx", qx);
 
         await router.push("/");
         window.location.reload();
