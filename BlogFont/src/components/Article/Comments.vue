@@ -103,7 +103,7 @@
             <!-- 显示更多/收起按钮 -->
             <div v-if="comment.Replies.length > 2" class="show-more-replies">
               <button @click="toggleShowAllReplies(comment)">
-                {{ comment.showAllReplies ? "收起回复" : `显示更多回复(${comment.Replies.length - 2}条)` }}
+                {{ replyExpansionState[comment.Id] ? "收起回复" : `显示更多回复(${comment.Replies.length - 2}条)` }}
               </button>
             </div>
           </div>
@@ -150,7 +150,6 @@ const hasReplyActions = computed(() => (reply, comment) => {
   return isAdmin || reply.User.Id == currentUserId || comment.User.Id == currentUserId;
 });
 
-
 // 重置评论相关状态（切换文章时调用）
 const resetCommentState = () => {
   comments.value = [];
@@ -159,6 +158,7 @@ const resetCommentState = () => {
   menuStates.value = {};
   activeReplies.value = { parent: null, child: null };
   usernameCache.value = {};
+  replyExpansionState.value = {}; // 切换文章时重置展开状态
 };
 
 // 菜单控制
@@ -195,6 +195,7 @@ const pinComment = async (commentId, isParent, parentCommentId = null) => {
         });
       }
     }
+      fetchComments();
   } catch (error) {
     console.error("置顶失败:", error);
   }
@@ -208,11 +209,19 @@ const fetchComments = async () => {
     if (!response.ok) throw new Error("获取评论失败");
     const data = await response.json();
     comments.value = (data.data || []).sort((a, b) => {
+        // 置顶评论优先
       if (a.IsPinned === 1 && b.IsPinned !== 1) return -1;
       if (a.IsPinned !== 1 && b.IsPinned === 1) return 1;
+
+        // 同为置顶评论，按 PinnedAt 降序（后置顶在前）
+      if (a.IsPinned === 1 && b.IsPinned === 1) {
+        return new Date(b.PinnedAt) - new Date(a.PinnedAt);
+      }
+        // 同为非置顶评论，按创建时间降序
       return new Date(b.CreatedAt) - new Date(a.CreatedAt);
-    });
-    comments.value.forEach((comment) => { comment.showAllReplies = false; });
+    
+      
+    });  
   } catch (error) {
     console.error("获取评论失败:", error);
   }
@@ -314,9 +323,14 @@ const cancelReply = (isChild = false) => {
   activeReplies.value[isChild ? "child" : "parent"] = null;
 };
 
+
+const replyExpansionState = ref({}); 
+
 // 切换显示所有回复
 const toggleShowAllReplies = (comment) => {
-  comment.showAllReplies = !comment.showAllReplies;
+    // comment.showAllReplies = !comment.showAllReplies;
+  // 操作保存的状态
+  replyExpansionState.value[comment.Id] = !replyExpansionState.value[comment.Id];
 };
 
 // 格式化时间
@@ -329,11 +343,20 @@ const formatTime = (timeStr) => {
 const sortedReplies = (comment) => {
   if (!comment.Replies) return [];
   const sorted = [...comment.Replies].sort((a, b) => {
+    // 置顶回复优先
     if (a.IsPinned === 1 && b.IsPinned !== 1) return -1;
     if (a.IsPinned !== 1 && b.IsPinned === 1) return 1;
+
+     // 同为置顶回复，按 PinnedAt 降序（后置顶在前）
+    if (a.IsPinned === 1 && b.IsPinned === 1) {
+      return new Date(b.PinnedAt) - new Date(a.PinnedAt); // 关键修改：降序排列
+    }
+
+    // 同为非置顶回复，按创建时间降序
     return new Date(b.CreatedAt) - new Date(a.CreatedAt);
   });
-  return comment.showAllReplies ? sorted : sorted.slice(0, 2);
+ const isExpanded = replyExpansionState.value[comment.Id] || false;
+  return isExpanded ? sorted : sorted.slice(0, 2);
 };
 
 // 重置用户名缓存

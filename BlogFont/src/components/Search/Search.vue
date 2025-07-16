@@ -50,15 +50,6 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 const router = useRouter()
 
-// import { createRouter, createWebHistory } from 'vue-router'
-// const router = createRouter({
-//     history: createWebHistory(),
-//     routes: [
-//         { path: '/articleContent', component: ArticleContent },
-//         // 其他路由配置...
-//     ],
-// })
-
 const searchInput = ref(null)
 const searchQuery = ref('')
 const searchBackground = ref('rgba(0, 0, 0, 0.5)')
@@ -133,8 +124,8 @@ const performSearch = async () => {
 
 //获取文章id
 const getArticleContent = (articleId) => {
-    localStorage.setItem("articleId", articleId);
-    router.push({ path: '/articleContent' });
+  const encodedId = window.btoa(articleId.toString());
+  router.push(`/articleContent/${encodedId}`);
 };
 </script>
 
