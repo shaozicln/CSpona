@@ -10,9 +10,6 @@ import piniaPluginPersistedstate from 'pinia-plugin-persistedstate'
 const pinia = createPinia()
 pinia.use(piniaPluginPersistedstate)
 
-
-
-
 const app = createApp(App).use(router).use(pinia).use(ElementPlus);
 
 // 重构前的后端，仅有一个main.go，Back文件，已弃用
@@ -25,6 +22,10 @@ const isProduction = process.env.NODE_ENV === "production";
 app.config.globalProperties.URL = isProduction
   ? "/api"
   : "http://127.0.0.1:3000/api";
+
+app.config.globalProperties.URL2 = isProduction
+  ? "https://cspona.top"
+  : "http://127.0.0.1:3000";
 
 // 图片
 app.config.globalProperties.$imageBaseUrl =

@@ -11,13 +11,14 @@ type Comment struct {
 	ArticleId int       `gorm:"column:article_id"`
 	UserId    int       `gorm:"column:user_id"`
 	Idea      string    `gorm:"column:idea"`
-	ParentId  *uint     `gorm:"column:parent_id"` // 允许NULL
+	ParentId  *uint     `gorm:"column:parent_id"`
 	CreatedAt time.Time `gorm:"type:timestamp"`
 	UpdatedAt time.Time `gorm:"type:timestamp"`
 	User      User      `gorm:"foreignKey:UserId"`
 	Replies   []Comment `gorm:"foreignKey:ParentId"` // 子评论关联（基于parent_id）
 	IsPinned  int       `gorm:"column:is_pinned"`
 	ReplyId   *int       `gorm:"column:reply_id"` // 新增：指向被直接回复的评论ID
+    PinnedAt *time.Time `gorm:"column:pinned_at;type:timestamp;null"` // 置顶时间
 }
 
 func (Comment) TableName() string {
@@ -34,10 +35,9 @@ func PinComment(c *gin.Context) {
         return
     }
 
-    // 解析请求体
+    // 解析请求体（保持原有结构，仅修改字段）
     var request struct {
         IsPinned int `json:"is_pinned"`
-        ParentId *uint `json:"parent_id"`
     }
     if err := c.ShouldBindJSON(&request); err != nil {
         c.JSON(http.StatusBadRequest, gin.H{"error": "无效的请求参数"})
@@ -51,20 +51,38 @@ func PinComment(c *gin.Context) {
         return
     }
 
-    // 更新置顶状态
-    if err := db.Model(&comment).Update("is_pinned", request.IsPinned).Error; err != nil {
-        c.JSON(http.StatusInternalServerError, gin.H{"error": "更新置顶状态失败"})
-        return
+    // 更新置顶状态和时间（保持单条Update语句风格）
+    if request.IsPinned == 1 {
+        // 置顶操作：设置 is_pinned 和 pinned_at
+        if err := db.Model(&comment).Updates(map[string]interface{}{
+            "is_pinned":  request.IsPinned,
+            "pinned_at":  time.Now(),
+        }).Error; err != nil {
+            c.JSON(http.StatusInternalServerError, gin.H{"error": "更新置顶状态失败"})
+            return
+        }
+    } else {
+        // 取消置顶：只更新 is_pinned，pinned_at 设为 NULL
+        if err := db.Model(&comment).Updates(map[string]interface{}{
+            "is_pinned":  request.IsPinned,
+            "pinned_at":  nil,
+        }).Error; err != nil {
+            c.JSON(http.StatusInternalServerError, gin.H{"error": "更新置顶状态失败"})
+            return
+        }
     }
 
+    // 返回结果（保持原有结构，添加 pinned_at 字段）
     c.JSON(http.StatusOK, gin.H{
         "message": "操作成功",
         "data": gin.H{
             "comment_id": commentID,
             "is_pinned":  request.IsPinned,
+            "pinned_at":  comment.PinnedAt, // 返回更新后的时间（可能为 nil）
         },
     })
 }
+
 func GetContent(c *gin.Context) {
 	id := c.Param("id")
 	var article Article

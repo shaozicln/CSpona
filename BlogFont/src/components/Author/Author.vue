@@ -47,7 +47,7 @@ const URL = instance?.appContext.config.globalProperties.URL;
 
 import { ref } from 'vue'
 
-const authorAvatar = ref('35.jpg')
+const authorAvatar = ref('Venti-2.jpg')
 const author = ref('长柄木勺')
 const email = ref('changbingmushao@qq.com')
 const gitHub = ref('shaozicln')
@@ -57,7 +57,7 @@ const major = ref('计算机科学与技术')
 const address = ref('中国-哈尔滨')
 </script>
 
-<style>
+<style scoped>
 .info-box {
     background-color: rgba(255, 255, 255, 0.5);
     padding: 20px;

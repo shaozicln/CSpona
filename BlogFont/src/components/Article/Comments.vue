@@ -364,28 +364,68 @@ const resetUsernameCache = () => {
   usernameCache.value = {};
 };
 
+const props = defineProps({
+  articleId: { type: [String, Number], required: true }
+});
+
+
+const isLoading = ref(false);
+
+// 加载评论的核心方法
+const loadComments = async () => {
+  if (!props.articleId) return;
+  isLoading.value = true;
+  try {
+    const response = await fetch(`${URL}/comments/${props.articleId}`); // 评论接口
+    const data = await response.json();
+    comments.value = data.data;
+  } catch (err) {
+    console.error("加载评论失败:", err);
+  } finally {
+    isLoading.value = false;
+  }
+};
+
+
 // 生命周期钩子
 onMounted(() => {
   document.addEventListener("click", closeMenu);
   fetchComments(); // 初始加载
+  loadComments();
 });
+
+watch(
+  () => props.articleId, // 直接监听 props 变化
+  (newId) => {
+    if (newId) {
+      resetCommentState();
+      fetchComments();
+    }
+  },
+  { immediate: true }
+);
+
 
 onUnmounted(() => {
   document.removeEventListener("click", closeMenu);
 });
 
 // 监听Pinia中的articleId变化（替代原来的localStorage监听）
-watch(
-  () => articleStore.articleId,
-  (newId) => {
-    if (newId) {
-      articleId.value = newId; // 同步到本地ref
-      resetCommentState();
-      fetchComments(); // 触发评论刷新
-    }
-  },
-  { immediate: true } // 初始加载时立即执行
-);
+// watch(
+//   () => articleStore.articleId,
+//   (newId) => {
+//     if (newId) {
+//       articleId.value = newId; // 同步到本地ref
+//       resetCommentState();
+//       fetchComments(); // 触发评论刷新
+//     }
+//   },
+//   { immediate: true } // 初始加载时立即执行
+// );
+
+defineExpose({
+  fetchComments
+});
 
 </script>
 

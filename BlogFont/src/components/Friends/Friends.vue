@@ -96,7 +96,7 @@
   </div>
 </template>
 
-<style scope>
+<style scoped>
 .friends {
   min-height: 100vh;
   padding: 50px;
@@ -674,4 +674,11 @@ const send = () => {
 const performSend = async () => {
   // perform send logic here
 };
+
+import { onBeforeRouteLeave } from 'vue-router';
+onBeforeRouteLeave((to, from) => {
+  if (to.name === 'Articles') { // 仅当跳转到 Articles 路由时设置刷新标记
+    sessionStorage.setItem('refreshAfterEnter', 'Articles');
+  }
+});
 </script>

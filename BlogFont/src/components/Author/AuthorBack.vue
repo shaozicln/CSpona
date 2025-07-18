@@ -51,7 +51,7 @@ const getImageUrl = (imgName) => {
 
   import { ref } from 'vue'
   
-  const authorAvatar = ref('35.jpg')
+  const authorAvatar = ref('Venti-2.jpg')
   const author = ref('长柄木勺')
   const email = ref('changbingmushao@qq.com')
   const gitHub = ref('shaozicln')
@@ -66,7 +66,7 @@ const getImageUrl = (imgName) => {
   }
   </script>
   
-  <style>
+  <style scoped>
   .mask {
     position: fixed;
     top: 0;

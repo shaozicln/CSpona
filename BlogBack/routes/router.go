@@ -21,7 +21,7 @@ func InitRouter() *gin.Engine {
 		router.GET("/users/:id", api.GetUserWithId)
 		router.GET("/users", api.GetUserWithUsername)
 		router.POST("/users", api.PostUser)
-		router.PUT("/users/:username", api.PutUser)
+		router.PUT("/users/:id", api.PutUser)
 		router.DELETE("/users/:id", api.DeleteUser)
 
 		// ...文章路由... Article.go
@@ -29,6 +29,9 @@ func InitRouter() *gin.Engine {
 		router.POST("/articles", api.PostArticle)
 		router.PUT("/articles/:id", api.PutArticle)
 		router.DELETE("/articles/:id", api.DeleteArticle)
+
+		// ...图片上传路由... Article.go
+		router.POST("/upload-image", api.UploadImage)
 
 		// ...分类路由... Category.go
 		router.GET("/categories", api.GetCategory)
@@ -67,7 +70,5 @@ func InitRouter() *gin.Engine {
 		router.GET("/advice", api.GetAdvice)
 		router.POST("/advice", api.PostAdvice)
 	}
-	r.SetTrustedProxies([]string{utils.DbHost})
-	r.Run(utils.HttpPort)
 	return r
 }

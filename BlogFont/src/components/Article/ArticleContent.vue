@@ -13,13 +13,8 @@
           <div class="toc-box">
             <div id="toc-title">内容索引</div>
             <ul>
-              <li
-                v-for="item in toc"
-                :key="item.slug"
-                :style="{ marginLeft: (item.level - 1) * 20 + 'px' }"
-                :class="{ active: activeSlug === item.slug }"
-                @click="scrollToContent(item.slug)"
-              >
+              <li v-for="item in toc" :key="item.slug" :style="{ marginLeft: (item.level - 1) * 20 + 'px' }"
+                :class="{ active: activeSlug === item.slug }" @click="scrollToContent(item.slug)">
                 <a :href="'#' + item.slug">{{ item.text }}</a>
               </li>
             </ul>
@@ -88,6 +83,7 @@ import { ref, onMounted, computed, watch } from "vue";
 import { useRouter, useRoute } from "vue-router";
 const router = useRouter();
 import { nextTick } from "vue";
+import { decodeArticleId } from '@/utils/utils.js';  
 
 const instance = getCurrentInstance();
 const URL = instance?.appContext.config.globalProperties.URL;
@@ -95,12 +91,19 @@ const URL = instance?.appContext.config.globalProperties.URL;
 // 初始化获取文章ID
 const route = useRoute();
 const articleId = ref("");
+// const loadArticleId = () => {
+//   // 解码Base64
+//   const decodedId = parseInt(window.atob(route.params.articleId), 10);
+//   articleId.value = decodedId;
+//   localStorage.setItem("articleId", decodedId);
+// };
+
 const loadArticleId = () => {
-  // 解码Base64
-  const decodedId = parseInt(window.atob(route.params.articleId), 10);
-  articleId.value = decodedId;
-  localStorage.setItem("articleId", decodedId);
+  articleId.value = decodeArticleId(route.params.articleId);
+  localStorage.setItem("articleId", articleId.value);
 };
+
+
 // 监听路由变化
 watch(
   () => route.params.articleId,
@@ -153,9 +156,8 @@ const renderer = {
   },
   code(code, language) {
     const copyButton = `<button class="copy-button">复制</button>`;
-    return `<div class="code-block"><pre><code class="language-${language}">${
-      hljs.highlightAuto(code).value
-    }</code>${copyButton}</pre></div>`;
+    return `<div class="code-block"><pre><code class="language-${language}">${hljs.highlightAuto(code).value
+      }</code>${copyButton}</pre></div>`;
   },
 };
 
@@ -169,43 +171,40 @@ marked.use(renderer);
 
 const renderedContent = computed(() => {
   if (!article.value) return "";
-  toc.value = []; // 清空 TOC 数组
-  headingCounter = {}; // 重置标题计数器
+  // 清空 TOC 数组和重置标题计数器
+  toc.value = [];
+  headingCounter = {};
 
   // 使用 marked 解析 Markdown 内容
   const content = marked(article.value.Content);
 
-  // 提取 <h1> 到 <h6> 标题
+  // 提取标题并更新 TOC
   const parser = new DOMParser();
   const doc = parser.parseFromString(content, "text/html");
   const headings = doc.querySelectorAll("h1, h2, h3, h4, h5, h6");
 
   headings.forEach((heading) => {
-    const level = parseInt(heading.tagName.replace("H", ""), 10); // 获取标题级别（1-6）
-    const text = heading.textContent; // 获取标题文本
-
-    // 使用 DOMParser 提取纯文本
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(text, "text/html");
-    const plainText = doc.body.textContent || "";
+    const level = parseInt(heading.tagName.replace("H", ""), 10);
+    const text = heading.textContent;
 
     // 忽略包含网址的标题
     if (!isUrl(text)) {
-      const slugBase = plainText
-        .normalize("NFD") // 将字符串转换为兼容形式，处理中文字符
-        .replace(/[\u0300-\u036f]/g, "") // 去掉重音符号
-        .replace(/[^\w\u4e00-\u9fa5-]/g, "-") // 只保留字母、数字、连字符和汉字
-        .replace(/-+/g, "-") // 替换连续的连字符为单个连字符
-        .toLowerCase(); // 转换为小写
-      const slug = `${slugBase}-${headingCounter[slugBase] || 0}`; // 添加计数器
-      headingCounter[slugBase] = (headingCounter[slugBase] || 0) + 1; // 更新计数器
+      const slugBase = text
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^\w\u4e00-\u9fa5-]/g, "-")
+        .replace(/-+/g, "-")
+        .toLowerCase();
+      const slug = `${slugBase}-${headingCounter[slugBase] || 0}`;
+      headingCounter[slugBase] = (headingCounter[slugBase] || 0) + 1;
 
-      toc.value.push({ slug, text: plainText, level });
+      toc.value.push({ slug, text, level });
     }
   });
 
-  return content; // 返回完整的渲染内容
+  return content;
 });
+
 
 // 判断字符串是否为网址
 function isUrl(text) {
@@ -304,6 +303,7 @@ onMounted(() => {
     hljs.highlightAll();
     bindCopyButtons();
   });
+  
 });
 
 // 滚动到相应内容
@@ -487,37 +487,6 @@ pre code {
   margin: 0 auto;
 }
 
-/* .fade-enter-active,
-.fade-leave-active {
-    transition: transform opacity 1s ease-in-out;
-}
-
-.fade-enter-from,
-.fade-leave-to {
-    opacity: 0;
-}
-
-.toc-transition-enter-active,
-.toc-transition-leave-active {
-    transition: transform 1s ease-in-out, opacity 1s ease-in-out;
-}
-
-.toc-transition-enter-from,
-.toc-transition-leave-to {
-    transform: translateY(60px);
-    opacity: 0;
-}
-
-.avatar-enter-active {
-    transition: transform 1s ease-in-out, opacity 1s ease-in-out;
-}
-
-.avatar-enter-from {
-    transform: translateY(60px);
-    width: 130px;
-    height: 130px;
-    opacity: 0;
-} */
 
 .toc-box li.active a {
   color: rgba(0, 0, 0, 0.2);

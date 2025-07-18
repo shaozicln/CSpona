@@ -9,8 +9,10 @@
         @click="scrollToCategory(index)"
       >
         <div class="category-content">
-          <img :src="getImageUrl(category.Img)" alt="图片丢失了!" />
-          <span class="category-name"
+          <img 
+        v-if="category && category.Id !== 1000" :src="getImageUrl(category.Img)" alt="图片丢失了!" />
+          <span class="category-name" 
+        v-if="category && category.Id !== 1000"
             >{{ category.Name }} ({{ getArticleCounts()[category.Name] }})</span
           >
         </div>
@@ -23,13 +25,14 @@
         v-for="(category, index) in categories"
         :key="'category-' + category.Id"
       >
-        <h3 :id="'category-' + index">{{ category.Name }}</h3>
+        <h3 v-if="category && category.Id !== 1000" :id="'category-' + index">{{ category.Name }}</h3>
         <!-- 如果当前分类下有文章，则渲染文章列表 -->
         <div class="articles-list" v-if="category.Articles.length > 0">
           <article
             class="article"
             v-for="(article, articleIndex) in category.Articles"
             :key="'article-' + articleIndex"
+            v-if="category && category.Id !== 1000"
           >
             <div class="article-content">
               <img
@@ -58,23 +61,29 @@ import { getCurrentInstance } from "vue";
 const instance = getCurrentInstance();
 const URL = instance?.appContext.config.globalProperties.URL;
 
-import { useRouter } from "vue-router";
+import { useRouter, useRoute } from "vue-router";
+const route = useRoute();
 const router = useRouter();
 
 import { ref, onMounted } from "vue";
 
-const categories = ref([]);
+const categorycategories = ref([]);
 
 const { proxy } = getCurrentInstance();
 const getImageUrl = (imgName) => {
   return `${proxy.$imageBaseUrl}${imgName}`;
 };
+
+const categories = ref([])
 // 获取分类和文章数据
 const fetchCategories = async () => {
   try {
     const response = await fetch(`${URL}/categories-with-articles`);
     const data = await response.json();
     categories.value = data.data;
+
+    console.log(categories.value);
+    
 
     // 文章数量统计
     const articleCounts = {};
@@ -110,12 +119,32 @@ const getArticleContent = (articleId) => {
 onMounted(() => {
   fetchCategories();
 });
+
+onMounted(() => {
+  if (sessionStorage.getItem('refreshAfterEnter') === 'Articles') {
+    sessionStorage.removeItem('refreshAfterEnter'); // 清除标记
+    location.reload(); // 刷新页面
+  }
+});
 </script>
 
-<style>
+<style scoped>
 #Content {
   display: flex;
   height: 100vh;
+}
+
+
+h2 {
+  text-align: center;
+  font-size: 30px;
+  font-family: cursive;
+}
+
+h3 {
+  text-align: center;
+  font-size: 40px;
+  font-family: cursive;
 }
 
 .sidebar {
@@ -147,10 +176,11 @@ onMounted(() => {
   margin-bottom: 5px;
   border-radius: 20px;
 
-  object-fit: cover;        /* 保持比例，覆盖容器 */
-  object-position: center;  /* 居中裁剪 */
+  object-fit: cover;
+  /* 保持比例，覆盖容器 */
+  object-position: center;
+  /* 居中裁剪 */
 }
-
 
 .category-content {
   position: relative;

@@ -41,16 +41,4 @@ import MyHead from './components/MyHead.vue'
   /* 水平滚动条的高度 */
 }
 
-h2 {
-  text-align: center;
-  font-size: 30px;
-  font-family: cursive;
-}
-
-h3 {
-  text-align: center;
-  font-size: 40px;
-  font-family: cursive;
-}
-
 </style>

@@ -93,7 +93,7 @@ function hideModal() {
 }
 </script>
 
-<style scope>
+<style scoped>
 .button {
     width: 100px;
     height: 40px;

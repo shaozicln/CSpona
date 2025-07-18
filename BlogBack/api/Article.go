@@ -31,6 +31,35 @@ func (Article) TableName() string {
 	return "articles"
 }
 
+// 图片上传接口
+func UploadImage(c *gin.Context) {
+	// 获取文件
+	file, err := c.FormFile("img")
+	if err != nil {
+		c.JSON(500, gin.H{"error": "无法获取文件"})
+		return
+	}
+
+	// 定义基本目录
+	baseDir := utils.GetImageBaseDir()
+	// 获取上传的文件名
+	filename := filepath.Base(file.Filename)
+	// 生成唯一文件名
+	uniqueFilename := time.Now().Format("20060102150405") + "_" + filename
+	// 连接字段，形成存储路径
+	savePath := filepath.Join(baseDir, uniqueFilename)
+	savePath = strings.ReplaceAll(savePath, "\\", "/") // 兼容不同操作系统
+
+	// 创建保存路径所在目录
+	_ = os.MkdirAll(baseDir, os.ModePerm)
+	// 保存文件
+	_ = c.SaveUploadedFile(file, savePath)
+
+	// 返回图片 URL
+	imageUrl := "/Pictures/" + uniqueFilename
+	c.JSON(200, gin.H{"imageUrl": imageUrl})
+}
+
 func SearchArticle(c *gin.Context) {
 	title := c.Query("title")
 	id := c.Query("id")

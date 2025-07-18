@@ -18,33 +18,26 @@
               <button @click="nextYear" class="nav-button">▶</button>
             </div>
             <div class="month-grid">
-              <button
-                v-for="month in months"
-                :key="month.value"
-                @click="selectMonth(month.value)"
-                :class="{
-                  'month-button': true,
-                  active:
-                    month.value === displayedMonth &&
-                    pickerYear === displayedYear,
-                  disabled:
-                    (month.value > currentMonth &&
-                      pickerYear === currentYear) ||
-                    pickerYear > currentYear ||
-                    !hasPostsInMonth[month.value],
-                  'no-posts':
-                    !hasPostsInMonth[month.value] &&
-                    !(
-                      month.value > currentMonth && pickerYear === currentYear
-                    ) &&
-                    !(pickerYear > currentYear),
-                }"
-                :disabled="
-                  (month.value > currentMonth && pickerYear === currentYear) ||
+              <button v-for="month in months" :key="month.value" @click="selectMonth(month.value)" :class="{
+                'month-button': true,
+                active:
+                  month.value === displayedMonth &&
+                  pickerYear === displayedYear,
+                disabled:
+                  (month.value > currentMonth &&
+                    pickerYear === currentYear) ||
+                  pickerYear > currentYear ||
+                  !hasPostsInMonth[month.value],
+                'no-posts':
+                  !hasPostsInMonth[month.value] &&
+                  !(
+                    month.value > currentMonth && pickerYear === currentYear
+                  ) &&
+                  !(pickerYear > currentYear),
+              }" :disabled="(month.value > currentMonth && pickerYear === currentYear) ||
                   pickerYear > currentYear ||
                   !hasPostsInMonth[month.value]
-                "
-              >
+                  ">
                 {{ month.label }}
               </button>
             </div>
@@ -62,20 +55,13 @@
       </div>
 
       <div class="timeline-content">
-        <div
-          v-for="(post, index) in sortedVisiblePosts"
-          :key="post.id"
-          class="timeline-post"
-          :style="{
-            ...getPostStyle(post),
-            top: `${index * 10 + 5}px`,
-            'border-radius': getPostBorderRadius(post),
-          }"
-          @click="goToArticle(post.id)"
-          @mouseenter="hoveredPost = post"
-          @mouseleave="hoveredPost = null"
-        >
-          <div class="post-content">
+        <!--  v-if="post.categoryId !== 1000" -->
+        <div v-for="(post, index) in sortedVisiblePosts" :key="post.id" class="timeline-post" :style="{
+          ...getPostStyle(post),
+          top: `${index * 10 + 5}px`,
+          'border-radius': getPostBorderRadius(post),
+        }"  @click="goToArticle(post.id)" @mouseenter="hoveredPost = post" @mouseleave="hoveredPost = null">
+          <div class="post-content" v-if="post.categoryId!==1000"  >
             <div class="post-time">
               {{ formatPostTime(post.start) }} - {{ formatPostTime(post.end) }}
             </div>
@@ -120,10 +106,11 @@ const fetchArticles = async () => {
 
     // 提取所有文章并转换格式
     const allArticles = data.flatMap((category) =>
-      category.Articles.map((article) => ({
+      category.Articles.filter(article => article.CategoryId !== 1000).map((article) => ({
         id: article.Id,
         title: article.Title,
         category: category.Name,
+        categoryId: article.CategoryId,
         start: article.CreatedAt,
         end: article.UpdatedAt,
       }))
@@ -162,9 +149,8 @@ const currentYear = ref(now.getFullYear());
 const currentMonth = ref(now.getMonth() + 1);
 const currentDay = ref(now.getDate());
 const currentDate = computed(() => {
-  return `今天 ${currentMonth.value}/${currentDay.value} ${
-    ["日", "一", "二", "三", "四", "五", "六"][now.getDay()]
-  }`;
+  return `今天 ${currentMonth.value}/${currentDay.value} ${["日", "一", "二", "三", "四", "五", "六"][now.getDay()]
+    }`;
 });
 
 const currentWeather = ref("晴");
@@ -269,14 +255,12 @@ const getPostStyle = (post) => {
   }
 
   // 计算卡片宽度和位置
-  const left = `${
-    ((startDay - 1 + startPercent / 100) / daysInMonth.value) * 100
-  }%`;
-  const width = `${
-    ((endDay - startDay + (endPercent - startPercent) / 100) /
+  const left = `${((startDay - 1 + startPercent / 100) / daysInMonth.value) * 100
+    }%`;
+  const width = `${((endDay - startDay + (endPercent - startPercent) / 100) /
       daysInMonth.value) *
     100
-  }%`;
+    }%`;
 
   return {
     left,
@@ -350,32 +334,32 @@ const getPostBorderRadius = (post) => {
 // 无文章按钮变灰
 const hasPostsInMonth = computed(() => {
   const postsByMonth = {};
-  
+
   // 初始化所有月份为false
   for (let i = 1; i <= 12; i++) {
     postsByMonth[i] = false;
   }
-  
+
   // 检查当前选择年份的文章
   posts.value.forEach(post => {
     const postStart = new Date(post.start);
     const postEnd = new Date(post.end);
     const postStartYear = postStart.getFullYear();
     const postEndYear = postEnd.getFullYear();
-    
+
     // 只有当文章时间范围与当前选择年份有交集时才处理
     if (postStartYear <= pickerYear.value && postEndYear >= pickerYear.value) {
       // 确定在当前选择年份内的实际开始和结束月份
       const startMonth = postStartYear < pickerYear.value ? 1 : postStart.getMonth() + 1;
       const endMonth = postEndYear > pickerYear.value ? 12 : postEnd.getMonth() + 1;
-      
+
       // 标记这些月份为有文章
       for (let month = startMonth; month <= endMonth; month++) {
         postsByMonth[month] = true;
       }
     }
   });
-  
+
   return postsByMonth;
 });
 
