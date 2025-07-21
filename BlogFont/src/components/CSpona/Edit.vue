@@ -142,7 +142,13 @@ function handleImageUpload(event) {
       body: formData,
     })
       .then((response) => {
-        if (!response.ok) throw new Error("上传失败");
+        if (!response.ok) {
+          if (response.status === 413) {
+            alert("图片上传失败，文件过大，请选择较小的图片重试。");
+          } else {
+            throw new Error("上传失败");
+          }
+        }
         return response.json();
       })
       .then((data) => {
@@ -230,9 +236,12 @@ const submitArticle = async () => {
     });
 
     if (!response.ok) {
-      throw new Error("Network response was not ok");
+      if (response.status === 413) {
+        alert("图片上传失败，文件过大，请选择较小的图片重试。");
+      } else {
+        throw new Error("Network response was not ok");
+      }
     }
-
     const data = await response.json();
     console.log(data);
     alert("文章上传成功 (^_^) 快去看看吧 ! ");

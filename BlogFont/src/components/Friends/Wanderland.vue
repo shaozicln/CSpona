@@ -55,7 +55,6 @@
             <span>浏览量: {{ article.ViewCount || 0 }}</span>
             <span>评论数: {{ article.CommentCount || 0 }}</span>
           </div>
-          <!-- <div class="content-box" v-html="renderedContent"></div> -->
            <div class="content-box" v-html="renderMarkdown(article.Content)"></div>
         </div>
 
@@ -138,62 +137,19 @@ const initArticleId = () => {
 };
 
 const renderMarkdown = (raw) => {
-  console.log("原始 Markdown 内容:", raw); // 打印原始 Markdown 内容
   if (typeof raw !== 'string') {
     raw = String(raw || '');
   }
   try {
     const htmlContent = marked(raw);
-    console.log("渲染后的 HTML:", htmlContent); // 打印渲染后的 HTML
+    console.log(htmlContent);
+    
     return htmlContent;
   } catch (e) {
     console.error('Markdown 渲染失败', e);
     return `<p>渲染失败</p>`;
   }
 };
-
-
-// const fetchArticleDetail = async (id) => {
-//   try {
-//     console.log(`开始获取文章详情，ID: ${id}`);
-
-//     // 使用正确的API端点 - 根据您的调试信息修正
-//     const response = await fetch(`${URL}/path-to-article/${id}`);
-//     console.log(`API响应状态: ${response.status}`);
-//     console.log(id);
-
-
-//     if (!response.ok) {
-//       const errorText = await response.text();
-//       throw new Error(`HTTP错误: ${response.status}, 响应: ${errorText}`);
-//     }
-
-//     const data = await response.json();
-//     console.log("原始文章数据:", data.data.Content);
-
-//     if (!data || !data.data) {
-//       throw new Error("文章数据为空");
-//     }
-
-//     article.value = data.data;
-//     if (article.value.Content == null) {
-//       article.value.Content = '';
-//     } else if (typeof article.value.Content !== 'string') {
-//       // 处理对象或数组类型的内容
-//       article.value.Content =
-//         typeof article.value.Content === 'object'
-//           ? JSON.stringify(article.value.Content)
-//           : String(article.value.Content);
-//     }
-//     // 获取文章作者信息
-//     if (article.value.UserId) {
-//       await fetchUserInfo(article.value.UserId);
-//     }
-//   } catch (err) {
-//     console.error("获取文章失败:", err);
-//     throw err;
-//   }
-// };
 
 const fetchArticleDetail = async (id) => {
   const res = await fetch(`${URL}/path-to-article/${id}`);
@@ -285,6 +241,47 @@ const renderer = new marked.Renderer();
 renderer.code = (code, language) => {
   const validLanguage = !language || !hljs.getLanguage(language) ? 'plaintext' : language;
   return `<pre class="hljs"><code class="hljs language-${validLanguage}">${hljs.highlightAuto(code).value}</code></pre>`;
+};
+// 如果是本地文件路径，添加前缀
+renderer.image = function() {
+  // 参数解析
+  let href, title, text;
+  
+  if (arguments.length >= 3) {
+    [href, title, text] = arguments;
+  } 
+  else if (arguments[0] && typeof arguments[0] === 'object') {
+    const token = arguments[0];
+    href = token.href;
+    title = token.title;
+    text = token.text;
+  }
+  else {
+    console.error('无法解析图片参数:', arguments);
+    href = '';
+  }
+  
+  // 确保 href 是字符串
+  if (typeof href !== 'string') {
+    href = String(href);
+  }
+  
+  // 编码 URL 并创建图片标签
+  return `<img src="${encodeURI(href)}" 
+               alt="${(text || '').replace(/"/g, '&quot;')}" 
+               title="${(title || '').replace(/"/g, '&quot;')}"
+               class="markdown-image"
+               style="
+                 max-width: 100%;
+                 height: auto;
+                 display: block;
+                 margin: 15px auto;
+                 border-radius: 4px;
+                 background: #f8f8f8;
+                 border: 1px solid #eee;
+                 padding: 4px;
+                 box-sizing: border-box;
+               ">`;
 };
 
 marked.setOptions({
@@ -635,8 +632,11 @@ onBeforeRouteLeave((to, from) => {
 
 .content-box img {
   max-width: 100%;
+  width: auto;
+  height: auto;
   border-radius: 4px;
-  margin: 15px 0;
+ display: block;
+  margin: 15px auto;
 }
 
 .comment-section {
