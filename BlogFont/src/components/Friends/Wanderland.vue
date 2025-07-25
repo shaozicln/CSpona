@@ -12,12 +12,26 @@
 
         <!-- 分类列表 -->
         <div v-else>
-          <div v-for="category in categories" :key="category.Id" class="category-item">
+          <div
+            v-for="category in categories"
+            :key="category.Id"
+            class="category-item"
+          >
             <!-- 特殊处理ID为1000的分类 -->
             <div v-if="category.Id === 1000" class="special-articles">
-              <div v-for="articleItem in category.Articles" :key="articleItem.Id" class="article-card"
-                @click="loadAndShowArticle(articleItem.Id)" :class="{ 'active-article': articleItem.Id === articleId }">
-                <img :src="getImageUrl(articleItem.Img)" alt="文章缩略图" class="article-img" loading="lazy" />
+              <div
+                v-for="articleItem in category.Articles"
+                :key="articleItem.Id"
+                class="article-card"
+                @click="loadAndShowArticle(articleItem.Id)"
+                :class="{ 'active-article': articleItem.Id === articleId }"
+              >
+                <img
+                  :src="getImageUrl(articleItem.Img)"
+                  alt="文章缩略图"
+                  class="article-img"
+                  loading="lazy"
+                />
                 <div class="article-info">
                   <h4 class="article-title">{{ articleItem.Title }}</h4>
                   <p class="article-meta">
@@ -39,7 +53,10 @@
     <!-- 右侧文章内容区 -->
     <div class="content">
       <!-- 文章错误提示 -->
-      <div v-if="articleError && !isLoadingArticle" class="error-message article-error">
+      <div
+        v-if="articleError && !isLoadingArticle"
+        class="error-message article-error"
+      >
         {{ articleError }}
         <button @click="retryLoadArticle" class="retry-btn">重试</button>
       </div>
@@ -55,14 +72,26 @@
             <span>浏览量: {{ article.ViewCount || 0 }}</span>
             <span>评论数: {{ article.CommentCount || 0 }}</span>
           </div>
-           <div class="content-box" v-html="renderMarkdown(article.Content)"></div>
+          <div
+            class="content-box"
+            v-html="renderMarkdown(article.Content)"
+          ></div>
         </div>
 
         <!-- 评论区 -->
         <div class="white-box comment-section" v-if="!isLoadingArticle">
-          <h3 class="comment-title" style=" text-align: center;font-size: 40px;font-family: cursive;">评论区</h3>
+          <h3
+            class="comment-title"
+            style="text-align: center; font-size: 40px; font-family: cursive"
+          >
+            评论区
+          </h3>
           <!-- 使用更唯一的key强制评论组件在文章ID变化时重新渲染 -->
-          <Comments ref="commentsRef" :article-id="articleId" :key="'comments-' + articleId" />
+          <Comments
+            ref="commentsRef"
+            :article-id="articleId"
+            :key="'comments-' + articleId"
+          />
         </div>
       </div>
 
@@ -84,14 +113,22 @@
 <script setup>
 import Comments from "../Article/Comments.vue";
 import { useUserStore } from "@/stores/user";
-import { ref, onMounted, computed, watch, nextTick, onUnmounted, toRefs } from "vue";
+import {
+  ref,
+  onMounted,
+  computed,
+  watch,
+  nextTick,
+  onUnmounted,
+  toRefs,
+} from "vue";
 import { useRouter, useRoute, onBeforeRouteLeave } from "vue-router";
 import { getCurrentInstance } from "vue";
 import { marked } from "marked";
 import hljs from "highlight.js";
 import "highlight.js/styles/github.css";
 import { useArticleStore } from "@/stores/article";
-import { decodeArticleId } from '@/utils/utils.js';
+import { decodeArticleId } from "@/utils/utils.js";
 
 // 路由与状态管理
 const userStore = useUserStore();
@@ -137,16 +174,16 @@ const initArticleId = () => {
 };
 
 const renderMarkdown = (raw) => {
-  if (typeof raw !== 'string') {
-    raw = String(raw || '');
+  if (typeof raw !== "string") {
+    raw = String(raw || "");
   }
   try {
     const htmlContent = marked(raw);
     console.log(htmlContent);
-    
+
     return htmlContent;
   } catch (e) {
-    console.error('Markdown 渲染失败', e);
+    console.error("Markdown 渲染失败", e);
     return `<p>渲染失败</p>`;
   }
 };
@@ -158,13 +195,12 @@ const fetchArticleDetail = async (id) => {
 
   article.value = {
     ...data,
-    Content: data.Content ?? data.content ?? '',
-    Title: data.Title ?? data.title ?? '未命名文章',
+    Content: data.Content ?? data.content ?? "",
+    Title: data.Title ?? data.title ?? "未命名文章",
   };
 
   if (data.UserId) await fetchUserInfo(data.UserId);
 };
-
 
 // 加载并显示文章
 const loadAndShowArticle = async (id) => {
@@ -177,13 +213,13 @@ const loadAndShowArticle = async (id) => {
     localStorage.setItem("articleId", id);
     const encodedId = window.btoa(id.toString());
     router.replace({
-     name: route.name,
+      name: route.name,
       params: { ...route.params, articleId: encodedId },
-   });
+    });
     await fetchArticleDetail(id);
-    console.log('文章加载完成', article.value);
+    console.log("文章加载完成", article.value);
     nextTick(() => {
-     if (commentsRef.value) {
+      if (commentsRef.value) {
         commentsRef.value.fetchComments();
       }
     });
@@ -239,37 +275,38 @@ marked.setOptions({
 // 使用自定义渲染器来处理代码块
 const renderer = new marked.Renderer();
 renderer.code = (code, language) => {
-  const validLanguage = !language || !hljs.getLanguage(language) ? 'plaintext' : language;
-  return `<pre class="hljs"><code class="hljs language-${validLanguage}">${hljs.highlightAuto(code).value}</code></pre>`;
+  const validLanguage =
+    !language || !hljs.getLanguage(language) ? "plaintext" : language;
+  return `<pre class="hljs"><code class="hljs language-${validLanguage}">${
+    hljs.highlightAuto(code).value
+  }</code></pre>`;
 };
 // 如果是本地文件路径，添加前缀
-renderer.image = function() {
+renderer.image = function () {
   // 参数解析
   let href, title, text;
-  
+
   if (arguments.length >= 3) {
     [href, title, text] = arguments;
-  } 
-  else if (arguments[0] && typeof arguments[0] === 'object') {
+  } else if (arguments[0] && typeof arguments[0] === "object") {
     const token = arguments[0];
     href = token.href;
     title = token.title;
     text = token.text;
+  } else {
+    console.error("无法解析图片参数:", arguments);
+    href = "";
   }
-  else {
-    console.error('无法解析图片参数:', arguments);
-    href = '';
-  }
-  
+
   // 确保 href 是字符串
-  if (typeof href !== 'string') {
+  if (typeof href !== "string") {
     href = String(href);
   }
-  
+
   // 编码 URL 并创建图片标签
   return `<img src="${encodeURI(href)}" 
-               alt="${(text || '').replace(/"/g, '&quot;')}" 
-               title="${(title || '').replace(/"/g, '&quot;')}"
+               alt="${(text || "").replace(/"/g, "&quot;")}" 
+               title="${(title || "").replace(/"/g, "&quot;")}"
                class="markdown-image"
                style="
                  max-width: 100%;
@@ -335,7 +372,6 @@ const fetchCategories = async () => {
 };
 
 // 获取文章详情
-
 
 // 获取用户信息
 const fetchUserInfo = async (userId) => {
@@ -455,7 +491,6 @@ onMounted(async () => {
   await fetchCategories();
   console.log(`分类加载完成`);
 
-
   const defaultId = 95;
   await loadAndShowArticle(defaultId);
 
@@ -470,12 +505,12 @@ onUnmounted(() => {
 });
 
 onBeforeRouteLeave((to, from) => {
-  if (to.name === 'Articles') { // 仅当跳转到 Articles 路由时设置刷新标记
-    sessionStorage.setItem('refreshAfterEnter', 'Articles');
+  if (to.name === "Articles") {
+    // 仅当跳转到 Articles 路由时设置刷新标记
+    sessionStorage.setItem("refreshAfterEnter", "Articles");
   }
 });
 </script>
-
 
 <style scoped>
 /* 基础布局 */
@@ -519,8 +554,6 @@ onBeforeRouteLeave((to, from) => {
   z-index: -1;
   /* filter: brightness(0.8); */
 }
-
-
 
 .article-count {
   color: #666;
@@ -590,8 +623,6 @@ onBeforeRouteLeave((to, from) => {
   gap: 20px;
 }
 
-
-
 .title-section {
   padding: 25px 30px;
 }
@@ -635,7 +666,7 @@ onBeforeRouteLeave((to, from) => {
   width: auto;
   height: auto;
   border-radius: 4px;
- display: block;
+  display: block;
   margin: 15px auto;
 }
 

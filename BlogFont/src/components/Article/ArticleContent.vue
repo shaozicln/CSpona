@@ -159,12 +159,53 @@ const renderer = {
     return `<div class="code-block"><pre><code class="language-${language}">${hljs.highlightAuto(code).value
       }</code>${copyButton}</pre></div>`;
   },
+
+//   image() {
+//   // 参数解析
+//   let href, title, text;
+
+//   if (arguments.length >= 3) {
+//     [href, title, text] = arguments;
+//   } else if (arguments[0] && typeof arguments[0] === "object") {
+//     const token = arguments[0];
+//     href = token.href;
+//     title = token.title;
+//     text = token.text;
+//   } else {
+//     console.error("无法解析图片参数:", arguments);
+//     href = "";
+//   }
+
+//   // 确保 href 是字符串
+//   if (typeof href !== "string") {
+//     href = String(href);
+//   }
+
+//   // 编码 URL 并创建图片标签
+// return `<img src="${encodeURI(href)}" 
+//                alt="${(text || "").replace(/"/g, "&quot;")}" 
+//                title="${(title || "").replace(/"/g, "&quot;")}"
+//                class="markdown-image"
+//                style="
+//                  max-width: 100% !important; /* 关键：不超过父容器宽度 */
+//                  width: auto; 
+//                  height: auto;
+//                  display: block;
+//                  margin: 15px auto; /* 居中显示 */
+//                  border-radius: 4px;
+//                  background: #f8f8f8;
+//                  border: 1px solid #eee;
+//                  padding: 4px;
+//                  box-sizing: border-box;
+//                ">`;
+// },
 };
 
 // 确保在解析 Markdown 之前应用自定义渲染器
 marked.setOptions({
   gfm: true,
   breaks: true,
+  
 });
 
 marked.use(renderer);
@@ -367,6 +408,8 @@ function copyCode(button) {
   display: flex;
   flex-direction: column;
   align-items: center;
+  height:85vh;
+  overflow: auto;
 }
 
 .right-side {
@@ -395,9 +438,10 @@ function copyCode(button) {
 }
 
 .content-box {
-  margin-bottom: 20px;
-  line-height: 1.8;
-  overflow-y: auto;
+  max-width: 100%;
+  margin: 0 auto;
+  padding: 0 20px;
+  overflow-x: hidden; 
 }
 
 .comment-box {
@@ -422,7 +466,7 @@ function copyCode(button) {
 }
 
 .toc-box ul {
-  list-style-type: none;
+  /* list-style-type: none; */
   padding: 0;
 }
 
@@ -522,5 +566,18 @@ pre code {
 
 .copy-button:hover {
   background-color: rgba(0, 0, 0, 0.4);
+}
+
+/* 强制 Markdown 图片继承容器宽度限制 */
+.markdown-image {
+  max-width: 100% !important; /* 强制继承父容器宽度 */
+  height: auto !important; /* 保持比例 */
+  display: block !important;
+}
+
+/* 处理可能的图片父容器问题 */
+.content-box > p img,
+.content-box > div img {
+  max-width: 100% !important; /* 针对嵌套在 p 或 div 中的图片 */
 }
 </style>
