@@ -42,12 +42,10 @@
           <div class="file-input-group">
             <label>封面展示:</label>
             <input @change="coverChange" type="file" accept="image/*" />
-           
           </div>
           <div class="file-input-group">
             <label>网站背景:</label>
             <input @change="backgroundChange" type="file" accept="image/*" />
-           
           </div>
           <br />
           <button @click="createApplication" class="button">提交</button>
@@ -84,20 +82,88 @@ const websiteUrl = ref();
 const websiteDescription = ref();
 const friendDescription = ref();
 
+// 新增：显示已选文件名
+const coverFileName = ref("");
+const backgroundFileName = ref("");
+
 //图片文件名字赋值
 const coverFile = ref(null);
 const backgroundFile = ref(null);
+const MAX_FILE_SIZE = 1 * 1024 * 1024; // 1MB
+
 function coverChange(event) {
   const files = event.target.files;
   if (files && files.length > 0) {
-    coverFile.value = files[0];
+    const file = files[0];
+
+    // 新增：验证文件大小
+    if (file.size > MAX_FILE_SIZE) {
+      alert("封面图片大小不能超过1MB，请重新选择");
+      event.target.value = ""; // 清空选择
+      coverFile.value = null;
+      coverFileName.value = "";
+      return;
+    }
+
+    // 新增：验证文件类型
+    if (!file.type.startsWith("image/")) {
+      alert("请选择有效的图片文件");
+      event.target.value = "";
+      coverFile.value = null;
+      coverFileName.value = "";
+      return;
+    }
+
+    // 新增：保存文件名用于显示
+    coverFile.value = file;
+    coverFileName.value = file.name;
+    console.log(`封面图片: ${file.name}, 大小: ${formatFileSize(file.size)}`);
+  } else {
+    coverFile.value = null;
+    coverFileName.value = "";
   }
+}
+
+// 辅助函数：格式化文件大小显示
+function formatFileSize(bytes) {
+  if (bytes === 0) return "0 Bytes";
+  const k = 1024;
+  const sizes = ["Bytes", "KB", "MB", "GB"];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
 }
 
 function backgroundChange(event) {
   const files = event.target.files;
   if (files && files.length > 0) {
-    backgroundFile.value = files[0];
+    const file = files[0]; // 新增：获取文件对象
+    
+    // 新增：验证文件大小（1MB限制）
+    if (file.size > MAX_FILE_SIZE) {
+      alert("背景图片大小不能超过1MB，请重新选择");
+      event.target.value = ""; // 清空选择
+      backgroundFile.value = null;
+      backgroundFileName.value = "";
+      return;
+    }
+    
+    // 新增：验证文件类型（仅图片）
+    if (!file.type.startsWith("image/")) {
+      alert("请选择有效的图片文件");
+      event.target.value = "";
+      backgroundFile.value = null;
+      backgroundFileName.value = "";
+      return;
+    }
+    
+    // 新增：保存文件名用于显示
+    backgroundFile.value = file;
+    backgroundFileName.value = file.name;
+    console.log(`背景图片: ${file.name}, 大小: ${formatFileSize(file.size)}`);
+  } else {
+    // 新增：清空选择时重置状态
+    backgroundFile.value = null;
+    backgroundFileName.value = "";
   }
 }
 
@@ -122,13 +188,35 @@ const createAdvice = async () => {
     const data = await response.json();
     console.log(data);
     alert("作者收到啦(^_^) 感谢建议! ");
-    window.location.reload();
+    adviceForm.value = { type: '', content: '' };
   } catch (error) {
     console.error(error);
   }
 };
 const createApplication = async () => {
   try {
+    // 验证图片
+    if (!coverFile.value) {
+      alert("请上传封面图片");
+      return;
+    }
+
+    if (!backgroundFile.value) {
+      alert("请上传背景图片");
+      return;
+    }
+
+    // 再次验证图片大小（双重检查）
+    if (coverFile.value.size > MAX_FILE_SIZE) {
+      alert("封面图片大小不能超过1MB");
+      return;
+    }
+
+    if (backgroundFile.value.size > MAX_FILE_SIZE) {
+      alert("背景图片大小不能超过1MB");
+      return;
+    }
+
     const formData = new FormData();
     formData.append("username", usernameWeb);
     formData.append("email", emailWeb);
@@ -150,17 +238,26 @@ const createApplication = async () => {
     const data = await response.json();
     console.log(data);
     alert("作者收到啦(^_^) 感谢友链! 请给作者一点时间 ~ ");
-    window.location.reload();
+    // 重置表单
+    websiteName.value = "";
+    websiteUrl.value = "";
+    websiteDescription.value = "";
+    friendDescription.value = "";
+    coverFile.value = null;
+    backgroundFile.value = null;
+    coverFileName.value = "";
+    backgroundFileName.value = "";
   } catch (error) {
     console.error(error);
     alert("图片上传失败");
   }
 };
 
-import { onBeforeRouteLeave } from 'vue-router';
+import { onBeforeRouteLeave } from "vue-router";
 onBeforeRouteLeave((to, from) => {
-  if (to.name === 'Articles') { // 仅当跳转到 Articles 路由时设置刷新标记
-    sessionStorage.setItem('refreshAfterEnter', 'Articles');
+  if (to.name === "Articles") {
+    // 仅当跳转到 Articles 路由时设置刷新标记
+    sessionStorage.setItem("refreshAfterEnter", "Articles");
   }
 });
 </script>

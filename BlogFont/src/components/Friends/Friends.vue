@@ -589,17 +589,15 @@ onMounted(async () => {
   try {
     const response = await fetch(`${URL}/friendsWeb`, {
       method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: { "Content-Type": "application/json" },
     });
     const data = await response.json();
     const realFriends = data.data || [];
     
-    // 固定显示10本书
+    // 固定显示10个位置（可根据需求调整）
     const totalBooks = 10;
     
-    // 创建最终数组，先全部填充默认值
+    // 创建默认数组（填充"敬请期待"）
     const allFriends = Array.from({ length: totalBooks }, (_, i) => ({
       Id: `default-${i}`,
       Name: "敬请期待",
@@ -607,28 +605,23 @@ onMounted(async () => {
       Img: "",
       Introduction: "",
     }));
-    
-    // 明确指定要优先占用的位置（第5和第6本，索引4和5）
-    const priorityPositions = [4, 5]; // 第5和第6个位置
-    
-    // 先填充优先位置
-    let realIndex = 0;
-    for (const pos of priorityPositions) {
-      if (realIndex < realFriends.length && pos < allFriends.length) {
-        allFriends[pos] = realFriends[realIndex++];
+
+    // 核心：定义位置映射规则（索引对应关系）
+    // 位置顺序：5号(4) → 6号(5) → 4号(3) → 7号(6) → 3号(2) → 8号(7) → 2号(1) → 9号(8) → 1号(0) → 10号(9)
+    const positions = [4, 5, 3, 6, 2, 7, 1, 8, 0, 9]; 
+
+    // 按规则填充真实友链到对应位置
+    realFriends.forEach((friend, idx) => {
+      if (idx < positions.length) { // 防止越界
+        const targetIndex = positions[idx]; // 获取当前友链应放的目标索引
+        allFriends[targetIndex] = friend; // 放置到目标位置
       }
-    }
-    
-    // 剩余友链按顺序填充其他位置
-    for (let i = 0; i < allFriends.length && realIndex < realFriends.length; i++) {
-      if (!priorityPositions.includes(i)) {
-        allFriends[i] = realFriends[realIndex++];
-      }
-    }
-    
-    friends.value = allFriends;
+    });
+
+    friends.value = allFriends; // 赋值最终排序后的数组
     
   } catch (error) {
+    // 错误处理保持不变
     console.error("获取友链数据失败：", error);
     friends.value = Array.from({ length: 10 }, (_, i) => ({
       Id: `error-default-${i}`,
@@ -639,7 +632,6 @@ onMounted(async () => {
     }));
   }
 });
-
 // 位置计算函数（保持从中间展开效果）
 const getBookPosition = (index) => {
   const center = 4.5; // 书架中心在第4和第5本之间

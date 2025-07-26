@@ -184,7 +184,7 @@ const updatedUser = reactive({
 
 // 图片URL处理函数
 const getImageUrl = (imgName) => {
-    if (!imgName) return `${proxy?.$imageBaseUrl}default-article.jpg`;
+    if (!imgName) return `${proxy?.$imageBaseUrl}boli.jpg`;
     return `${proxy?.$imageBaseUrl}${imgName}`;
 };
 
@@ -193,7 +193,7 @@ const userAvatar = computed(() => getImageUrl(userInfo.Avatar));
 
 // 处理头像加载失败
 const handleAvatarError = (e) => {
-    e.target.src = `${proxy?.$imageBaseUrl}default-article.jpg`;
+    e.target.src = `${proxy?.$imageBaseUrl}boli.jpg`;
 };
 
 // 处理头像上传

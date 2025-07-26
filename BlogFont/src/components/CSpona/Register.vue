@@ -37,19 +37,63 @@ const file = ref(null);
 function fileChange(event) {
     const files = event.target.files;
     if (files && files.length > 0) {
+        // 新增：检查文件大小（1MB = 1024 * 1024 字节）
+        const fileSize = files[0].size;
+        const maxSize = 1 * 1024 * 1024; // 限制1MB
+        
+        if (fileSize > maxSize) {
+            alert("图片过大，请选择小于1MB的图片");
+            // 清空文件选择，避免无效文件残留
+            event.target.value = '';
+            file.value = null;
+            return; // 终止后续逻辑
+        }
+        
+        // 新增：可选的文件类型验证（确保是图片）
+        const fileType = files[0].type;
+        if (!fileType.startsWith('image/')) {
+            alert("请选择图片文件（支持jpg、png等格式）");
+            event.target.value = '';
+            file.value = null;
+            return;
+        }
+        
+        // 原有逻辑：正常赋值文件
         file.value = files[0];
-        console.log(file.value.name);
+        console.log(`已选择文件: ${file.value.name}, 大小: ${(fileSize / 1024).toFixed(2)}KB`);
     } else {
         console.log('没有选择文件');
-        alert("请选择头像")
+        alert("请选择头像");
+        file.value = null;
     }
 }
 
+import { useRouter } from 'vue-router';
+const router = useRouter();
 const createUser = async () => {
     try {
         if (username.value.trim() === '' || password.value.trim() === '' ) {
             alert("信息不完善,请重新填写");
             return 0;
+        }
+
+         // 验证邮箱格式
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(newEmail.value.trim())) {
+            alert("请输入有效的邮箱地址");
+            return;
+        }
+
+        if (!file.value) {
+            alert("请选择头像图片");
+            return;
+        }
+
+
+         // 二次验证文件大小
+        if (file.value.size > 1 * 1024 * 1024) {
+            alert("图片过大，请选择小于1MB的图片");
+            return;
         }
 
         const formData = new FormData();
@@ -72,7 +116,7 @@ const createUser = async () => {
         console.log(data)
         console.log("标记标记");
         alert("注册成功 (^_^) 快去看看吧 ! ")
-        window.location.reload()
+        router.push('/login')
     } catch (err) {
         console.error(err)
         alert("注册失败");
