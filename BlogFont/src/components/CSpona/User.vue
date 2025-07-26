@@ -22,26 +22,26 @@
                 <div v-else class="user-info-content">
                     <!-- 圆形头像 -->
                     <div class="avatar-container">
-                        <img :src="userAvatar" alt="用户头像" class="avatar" @error="handleAvatarError">
+                        <img :src="userAvatar" alt="用户头像" class="avatar" @error="handleAvatarError" />
                     </div>
 
-                    <h2 class="username">{{ userInfo.Username || '未设置' }}</h2>
+                    <h2 class="username">{{ userInfo.Username || "未设置" }}</h2>
                     <p class="user-role" :class="roleClass">{{ roleText }}</p>
 
                     <div class="info-grid">
                         <div class="info-item">
                             <span class="info-label">用户ID</span>
-                            <span class="info-value">{{ userInfo.Id || 'N/A' }}</span>
+                            <span class="info-value">{{ userInfo.Id || "N/A" }}</span>
                         </div>
 
                         <div class="info-item">
                             <span class="info-label">邮箱</span>
-                            <span class="info-value">{{ userInfo.Email || '未设置' }}</span>
+                            <span class="info-value">{{ userInfo.Email || "未设置" }}</span>
                         </div>
 
                         <div class="info-item">
                             <span class="info-label">注册时间</span>
-                            <span class="info-value">{{ formattedDate || 'N/A' }}</span>
+                            <span class="info-value">{{ formattedDate || "N/A" }}</span>
                         </div>
 
                         <div class="info-item">
@@ -51,7 +51,9 @@
 
                         <div class="info-item full-width">
                             <span class="info-label">个人简介</span>
-                            <p class="info-value description">{{ userInfo.Description || '暂无简介' }}</p>
+                            <p class="info-value description">
+                                {{ userInfo.Description || "暂无简介" }}
+                            </p>
                         </div>
                     </div>
 
@@ -88,20 +90,20 @@
                         <div class="form-group">
                             <label for="username">用户名</label>
                             <input type="text" id="username" v-model="updatedUser.username" required
-                                class="form-control" >
+                                class="form-control" />
                         </div>
 
                         <!-- 邮箱 -->
                         <div class="form-group">
                             <label for="email">邮箱</label>
-                            <input type="email" id="email" v-model="updatedUser.email" required class="form-control">
+                            <input type="email" id="email" v-model="updatedUser.email" required class="form-control" />
                         </div>
 
                         <!-- 个人简介 -->
                         <div class="form-group">
                             <label for="description">个人简介</label>
                             <textarea id="description" v-model="updatedUser.description" rows="3" class="form-control"
-                                placeholder="请输入个人简介..." style="resize: vertical;"></textarea>
+                                placeholder="请输入个人简介..." style="resize: vertical"></textarea>
                         </div>
 
                         <!-- 头像上传（文件选择样式） -->
@@ -110,13 +112,13 @@
                             <div class="avatar-upload-container">
                                 <!-- 头像预览 -->
                                 <div class="avatar-preview">
-                                    <img :src="avatarPreviewUrl" alt="预览头像" class="preview-img">
+                                    <img :src="avatarPreviewUrl" alt="预览头像" class="preview-img" />
                                 </div>
 
                                 <!-- 文件上传按钮 -->
                                 <div class="file-upload-wrapper">
                                     <input type="file" id="avatar" class="file-upload-input" accept="image/*"
-                                        @change="handleAvatarUpload">
+                                        @change="handleAvatarUpload" />
                                     <label for="avatar" class="file-upload-btn">
                                         <i class="fas fa-upload"></i> 选择头像图片
                                     </label>
@@ -146,10 +148,10 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, computed } from 'vue';
-import { useUserStore } from '@/stores/user';
-import Edit from './Edit.vue';
-import { getCurrentInstance } from 'vue';
+import { ref, reactive, onMounted, computed } from "vue";
+import { useUserStore } from "@/stores/user";
+import Edit from "./Edit.vue";
+import { getCurrentInstance } from "vue";
 
 // 获取全局实例和配置
 const instance = getCurrentInstance();
@@ -161,25 +163,25 @@ const userStore = useUserStore();
 
 // 状态管理
 const loading = ref(true);
-const error = ref('');
+const error = ref("");
 const updateLoading = ref(false);
 const showEditDialog = ref(false);
 const userInfo = reactive({});
 
 // 头像上传相关状态
-const avatarPreviewUrl = ref('');
-const selectedFileName = ref('');
+const avatarPreviewUrl = ref("");
+const selectedFileName = ref("");
 const selectedFile = ref(null);
 
 // 从localStorage获取用户ID
-const userId = computed(() => localStorage.getItem('userId'));
+const userId = computed(() => localStorage.getItem("userId"));
 
 // 用于编辑的用户信息副本
 const updatedUser = reactive({
-    username: '',
-    email: '',
-    description: '',
-    avatar: ''
+    username: "",
+    email: "",
+    description: "",
+    avatar: "",
 });
 
 // 图片URL处理函数
@@ -201,10 +203,17 @@ const handleAvatarUpload = (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
+    const maxSize = 1 * 1024 * 1024;
+    if (file.size > maxSize) {
+        alert("头像大小不要超过1MB");
+        e.target.value = "";
+        return;
+    }
+
     // 验证文件类型
-    if (!file.type.startsWith('image/')) {
-        alert('请选择图片文件');
-        e.target.value = '';
+    if (!file.type.startsWith("image/")) {
+        alert("请选择图片文件");
+        e.target.value = "";
         return;
     }
 
@@ -222,32 +231,39 @@ const handleAvatarUpload = (e) => {
 
 // 格式化日期
 const formattedDate = computed(() => {
-    if (!userInfo.CreatedAt) return '';
+    if (!userInfo.CreatedAt) return "";
     const date = new Date(userInfo.CreatedAt);
-    return date.toLocaleString('zh-CN', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
+    return date.toLocaleString("zh-CN", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
     });
 });
 
 // 角色文本和样式
 const roleText = computed(() => {
     switch (userInfo.RoleQx) {
-        case 'A': return '管理员';
-        case 'B': return '高级用户';
-        case 'C': return '普通用户';
-        default: return '未知角色';
+        case "A":
+            return "管理员";
+        case "B":
+            return "高级用户";
+        case "C":
+            return "普通用户";
+        default:
+            return "未知角色";
     }
 });
 
 const roleClass = computed(() => {
     switch (userInfo.RoleQx) {
-        case 'A': return 'role-admin';
-        case 'B': return 'role-premium';
-        default: return 'role-default';
+        case "A":
+            return "role-admin";
+        case "B":
+            return "role-premium";
+        default:
+            return "role-default";
     }
 });
 
@@ -255,18 +271,18 @@ const roleClass = computed(() => {
 const fetchUserInfo = async () => {
     try {
         loading.value = true;
-        error.value = '';
+        error.value = "";
 
         if (!userId.value) {
-            throw new Error('未获取到用户ID，请重新登录');
+            throw new Error("未获取到用户ID，请重新登录");
         }
 
         // 调用API获取用户详情
         const response = await fetch(`${URL}/users/${userId.value}`, {
-            method: 'GET',
+            method: "GET",
             headers: {
-                'Content-Type': 'application/json'
-            }
+                "Content-Type": "application/json",
+            },
         });
 
         if (!response.ok) {
@@ -277,18 +293,17 @@ const fetchUserInfo = async () => {
         Object.assign(userInfo, result.data || result);
 
         // 初始化编辑表单
-        updatedUser.username = userInfo.Username || '';
-        updatedUser.email = userInfo.Email || '';
-        updatedUser.description = userInfo.Description || '';
-        updatedUser.avatar = userInfo.Avatar || '';
+        updatedUser.username = userInfo.Username || "";
+        updatedUser.email = userInfo.Email || "";
+        updatedUser.description = userInfo.Description || "";
+        updatedUser.avatar = userInfo.Avatar || "";
 
         // 初始化头像预览
         avatarPreviewUrl.value = getImageUrl(userInfo.Avatar);
-        selectedFileName.value = userInfo.Avatar || '';
-
+        selectedFileName.value = userInfo.Avatar || "";
     } catch (err) {
-        error.value = err.message || '获取用户信息失败，请稍后重试';
-        console.error('获取用户信息错误:', err);
+        error.value = err.message || "获取用户信息失败，请稍后重试";
+        console.error("获取用户信息错误:", err);
     } finally {
         loading.value = false;
     }
@@ -300,20 +315,19 @@ const handleUpdateProfile = async () => {
         updateLoading.value = true;
 
         // 准备更新数据（如果有新头像则使用新文件名）
-        const updateData = {
-            Username: updatedUser.username,
-            Email: updatedUser.email,
-            Description: updatedUser.description,
-            Avatar: selectedFileName.value // 使用选择的文件名
-        };
+        const formData = new FormData();
+        // 添加文本字段
+        formData.append("username", updatedUser.username);
+        formData.append("email", updatedUser.email);
+        formData.append("description", updatedUser.description);
+        if (selectedFile.value) {
+            formData.append("avatar", selectedFile.value);
+        }
 
         // 调用API更新用户信息
         const response = await fetch(`${URL}/users/${userId.value}`, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(updateData)
+            method: "PUT",
+            body: formData,
         });
 
         const data = await response.json();
@@ -327,7 +341,7 @@ const handleUpdateProfile = async () => {
             Username: updatedUser.username,
             Email: updatedUser.email,
             Avatar: selectedFileName.value,
-            Description: updatedUser.description
+            Description: updatedUser.description,
         });
 
         // 更新Pinia store
@@ -336,17 +350,16 @@ const handleUpdateProfile = async () => {
         userStore.avatar = selectedFileName.value;
 
         // 更新localStorage
-        localStorage.setItem('username', updatedUser.username);
-        localStorage.setItem('email', updatedUser.email);
-        localStorage.setItem('avatar', selectedFileName.value);
+        localStorage.setItem("username", updatedUser.username);
+        localStorage.setItem("email", updatedUser.email);
+        localStorage.setItem("avatar", selectedFileName.value);
 
         // 关闭弹窗并提示成功
         showEditDialog.value = false;
-        alert('资料更新成功！');
-
+        alert("资料更新成功！");
     } catch (err) {
-        console.error('更新用户信息错误:', err);
-        alert(err.message || '更新失败，请稍后重试');
+        console.error("更新用户信息错误:", err);
+        alert(err.message || "更新失败，请稍后重试");
     } finally {
         updateLoading.value = false;
     }
@@ -365,15 +378,16 @@ onMounted(() => {
         fetchUserInfo();
     } else {
         loading.value = false;
-        error.value = '未检测到登录状态，请先登录';
+        error.value = "未检测到登录状态，请先登录";
     }
 });
 
-import { onBeforeRouteLeave } from 'vue-router';
+import { onBeforeRouteLeave } from "vue-router";
 onBeforeRouteLeave((to, from) => {
-  if (to.name === 'Articles') { // 仅当跳转到 Articles 路由时设置刷新标记
-    sessionStorage.setItem('refreshAfterEnter', 'Articles');
-  }
+    if (to.name === "Articles") {
+        // 仅当跳转到 Articles 路由时设置刷新标记
+        sessionStorage.setItem("refreshAfterEnter", "Articles");
+    }
 });
 </script>
 
@@ -521,7 +535,7 @@ onBeforeRouteLeave((to, from) => {
     font-size: 1rem;
     transition: all 0.2s ease;
     background-color: #ffffff;
-    height:30px;
+    height: 30px;
 }
 
 .form-control:focus {
@@ -575,7 +589,7 @@ onBeforeRouteLeave((to, from) => {
     align-items: center;
     gap: 0.5rem;
     padding: 0.75rem 1.5rem;
-    background-color: rgb(72,173,255);
+    background-color: rgb(72, 173, 255);
     color: white;
     border: none;
     border-radius: 8px;
@@ -586,7 +600,7 @@ onBeforeRouteLeave((to, from) => {
 }
 
 .file-upload-btn:hover {
-    background-color: rgb( 34,204,207);
+    background-color: rgb(34, 204, 207);
     transform: translateY(-1px);
 }
 
@@ -633,7 +647,7 @@ onBeforeRouteLeave((to, from) => {
 
 .save-btn {
     padding: 0.75rem 1.5rem;
-    background-color: rgb(34,204,207);
+    background-color: rgb(34, 204, 207);
     color: white;
     border: none;
     border-radius: 8px;
