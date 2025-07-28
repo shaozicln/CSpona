@@ -223,7 +223,7 @@ onBeforeRouteLeave((to, from) => {
 }
 
 .calendar-component {
-    background-color: rgba(255, 255, 255, 0.3);
+    background-color: rgba(255, 255, 255, 0.75);
     border-radius: 8px;
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
     padding: 15px;

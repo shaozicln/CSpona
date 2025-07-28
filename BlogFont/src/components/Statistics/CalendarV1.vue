@@ -47,32 +47,28 @@
     </div>
 
     <div class="timeline-container">
-      <button @click="prevMonth" class="timeline-nav-button left" 
-    :disabled="!hasPrevValidMonth">
-        <</button>
+      <div class="timeline-scale">
+        <div v-for="day in daysInMonth" :key="day" class="scale-day">
+          <div class="scale-number">{{ day }}</div>
+          <div class="scale-line"></div>
+        </div>
+      </div>
 
-          <div class="timeline-scale">
-            <div v-for="day in daysInMonth" :key="day" class="scale-day">
-              <div class="scale-number">{{ day }}</div>
-              <div class="scale-line"></div>
+      <div class="timeline-content">
+        <!--  v-if="post.categoryId !== 1000" -->
+        <div v-for="(post, index) in sortedVisiblePosts" :key="post.id" class="timeline-post" :style="{
+          ...getPostStyle(post),
+          top: `${index * 10 + 5}px`,
+          'border-radius': getPostBorderRadius(post),
+        }"  @click="goToArticle(post.id)" @mouseenter="hoveredPost = post" @mouseleave="hoveredPost = null">
+          <div class="post-content" v-if="post.categoryId!==1000"  >
+            <div class="post-time">
+              {{ formatPostTime(post.start) }} - {{ formatPostTime(post.end) }}
             </div>
+            <div class="post-title">{{ post.title }}</div>
           </div>
-
-          <div class="timeline-content">
-            <div v-for="(post, index) in sortedVisiblePosts" :key="post.id" class="timeline-post" :style="{
-              ...getPostStyle(post),
-              top: `${index * 75 + 10}px`,
-            }" @click="goToArticle(post.id)">
-              <div class="post-content">
-                <!-- 只保留创建时间，去掉结束时间 -->
-                <div class="post-time">{{ formatPostTime(post.start) }}</div>
-                <!-- 为标题添加动态滚动类 -->
-                <div class="post-title" :class="{ 'scroll-title': shouldScrollTitle(post) }">
-                  {{ post.title }}
-                </div>
-              </div>
-            </div>
-          </div>
+        </div>
+      </div>
     </div>
 
     <div class="calendar-footer">
@@ -81,9 +77,6 @@
       </div>
       <div class="hint">右上角可切换不同时间</div>
     </div>
-
-    <button @click="nextMonth" class="timeline-nav-button right" 
-    :disabled="!hasNextValidMonth">></button>
   </div>
 </template>
 
@@ -113,16 +106,14 @@ const fetchArticles = async () => {
 
     // 提取所有文章并转换格式
     const allArticles = data.flatMap((category) =>
-      category.Articles.filter((article) => article.CategoryId !== 1000).map(
-        (article) => ({
-          id: article.Id,
-          title: article.Title,
-          category: category.Name,
-          categoryId: article.CategoryId,
-          start: article.CreatedAt,
-          end: article.UpdatedAt,
-        })
-      )
+      category.Articles.filter(article => article.CategoryId !== 1000).map((article) => ({
+        id: article.Id,
+        title: article.Title,
+        category: category.Name,
+        categoryId: article.CategoryId,
+        start: article.CreatedAt,
+        end: article.UpdatedAt,
+      }))
     );
 
     posts.value = allArticles;
@@ -186,23 +177,28 @@ const lastDayOfMonth = computed(() => {
 });
 
 // 筛选出在当前月有活动的文章
-// 修改 visiblePosts 计算属性
 const visiblePosts = computed(() => {
   return posts.value.filter((post) => {
+    const postEnd = new Date(post.end);
     const postStart = new Date(post.start);
-    const postYear = postStart.getFullYear();
-    const postMonth = postStart.getMonth() + 1; // 月份从0开始，+1转为实际月份
 
-    // 核心：仅保留 年份和月份完全匹配当前显示年月 的文章
-    const isSameYear = postYear === displayedYear.value;
-    const isSameMonth = postMonth === displayedMonth.value;
+    // 确保文章年份不超过当前年份
+    if (postStart.getFullYear() > currentYear.value) {
+      return false;
+    }
 
-    // 额外校验：不显示未来时间的文章（年份>当前年 或 同年份月份>当前月）
-    const isFuture =
-      postYear > currentYear.value ||
-      (postYear === currentYear.value && postMonth > currentMonth.value);
+    // 如果是当前年份，确保月份不超过当前月份
+    if (
+      postStart.getFullYear() === currentYear.value &&
+      postStart.getMonth() + 1 > currentMonth.value
+    ) {
+      return false;
+    }
 
-    return isSameYear && isSameMonth && !isFuture;
+    // 检查文章时间范围是否与当前显示月份有交集
+    return (
+      postStart <= lastDayOfMonth.value && postEnd >= firstDayOfMonth.value
+    );
   });
 });
 
@@ -232,23 +228,46 @@ const formatPostTime = (dateString) => {
 
 const getPostStyle = (post) => {
   const postStart = new Date(post.start);
-  const postYear = postStart.getFullYear();
-  const postMonth = postStart.getMonth() + 1;
-  const startDay = postStart.getDate();
+  const postEnd = new Date(post.end);
+  const firstDay = new Date(displayedYear.value, displayedMonth.value - 1, 1);
+  const lastDay = new Date(displayedYear.value, displayedMonth.value, 0);
 
-  if (postYear !== displayedYear.value || postMonth !== displayedMonth.value) {
-    return { display: 'none' };
+  // 处理跨月开始时间
+  let startDay = 1;
+  let startPercent = 0;
+  if (postStart >= firstDay) {
+    startDay = Math.max(1, postStart.getDate());
+    startPercent =
+      postStart.getDate() === startDay
+        ? ((postStart.getHours() * 60 + postStart.getMinutes()) / 1440) * 100
+        : 0;
   }
 
-  const left = `${((startDay - 1) / daysInMonth.value) * 100}%`;
+  // 处理跨月结束时间
+  let endDay = daysInMonth.value;
+  let endPercent = 100;
+  if (postEnd <= lastDay) {
+    endDay = Math.min(daysInMonth.value, postEnd.getDate());
+    endPercent =
+      postEnd.getDate() === endDay
+        ? ((postEnd.getHours() * 60 + postEnd.getMinutes()) / 1440) * 100
+        : 100;
+  }
+
+  // 计算卡片宽度和位置
+  const left = `${((startDay - 1 + startPercent / 100) / daysInMonth.value) * 100
+    }%`;
+  // 计算卡片宽度
+  const width = `100%`;
 
   return {
     left,
-    width: 'calc(100% - 40px)',  // 预留左侧颜色条空间
-    '--post-category-color': getPostColor(post),
+    width,
+    backgroundColor: getPostColor(post),
   };
+};
 
-};// 切换月份选择器
+// 切换月份选择器
 function toggleMonthPicker() {
   showMonthPicker.value = !showMonthPicker.value;
   if (showMonthPicker.value) {
@@ -289,13 +308,26 @@ const sortedVisiblePosts = computed(() => {
   });
 });
 
-// 添加标题滚动条件计算属性
-const shouldScrollTitle = computed(() => (post) => {
+// 计算文章卡片边缘圆角
+const getPostBorderRadius = (post) => {
   const postStart = new Date(post.start);
-  const startDay = postStart.getDate();
-  // 条件：当月下旬（日期>20）或标题长度>15字
-  return startDay > 20 || post.title.length > 15;
-});
+  const postEnd = new Date(post.end);
+  const firstDay = new Date(displayedYear.value, displayedMonth.value - 1, 1);
+  const lastDay = new Date(displayedYear.value, displayedMonth.value, 0);
+
+  // 判断是否跨月
+  const startsBeforeMonth = postStart < firstDay;
+  const endsAfterMonth = postEnd > lastDay;
+
+  if (startsBeforeMonth && endsAfterMonth) {
+    return "0";
+  } else if (startsBeforeMonth) {
+    return "0 4px 4px 0";
+  } else if (endsAfterMonth) {
+    return "4px 0 0 4px";
+  }
+  return "4px";
+};
 
 // 无文章按钮变灰
 const hasPostsInMonth = computed(() => {
@@ -306,109 +338,29 @@ const hasPostsInMonth = computed(() => {
     postsByMonth[i] = false;
   }
 
-  // 仅检查当前选择年份的文章
-  posts.value.forEach((post) => {
+  // 检查当前选择年份的文章
+  posts.value.forEach(post => {
     const postStart = new Date(post.start);
-    const postYear = postStart.getFullYear();
-    const postMonth = postStart.getMonth() + 1; // 月份从0开始
+    const postEnd = new Date(post.end);
+    const postStartYear = postStart.getFullYear();
+    const postEndYear = postEnd.getFullYear();
 
-    // 如果文章创建年份与当前选择年份相同，则标记该月份有文章
-    if (postYear === pickerYear.value) {
-      postsByMonth[postMonth] = true;
+    // 只有当文章时间范围与当前选择年份有交集时才处理
+    if (postStartYear <= pickerYear.value && postEndYear >= pickerYear.value) {
+      // 确定在当前选择年份内的实际开始和结束月份
+      const startMonth = postStartYear < pickerYear.value ? 1 : postStart.getMonth() + 1;
+      const endMonth = postEndYear > pickerYear.value ? 12 : postEnd.getMonth() + 1;
+
+      // 标记这些月份为有文章
+      for (let month = startMonth; month <= endMonth; month++) {
+        postsByMonth[month] = true;
+      }
     }
   });
 
   return postsByMonth;
 });
 
-
-// 获取指定年份中所有有文章的月份（升序排列）
-const getValidMonthsInYear = (year) => {
-  const validMonths = [];
-  posts.value.forEach(post => {
-    const postStart = new Date(post.start);
-    if (postStart.getFullYear() === year) {
-      const month = postStart.getMonth() + 1;
-      if (!validMonths.includes(month)) {
-        validMonths.push(month);
-      }
-    }
-  });
-  return validMonths.sort((a, b) => a - b); // 按月份升序排列
-};
-// 所有有效月份（有文章+不晚于当前时间），按时间升序
-const validMonths = computed(() => {
-  const valid = new Set();
-  
-  posts.value.forEach(post => {
-    const postStart = new Date(post.start);
-    const year = postStart.getFullYear();
-    const month = postStart.getMonth() + 1;
-    
-    // 只保留不晚于当前时间的月份
-    const isNotFuture = 
-      year < currentYear.value || 
-      (year === currentYear.value && month <= currentMonth.value);
-    
-    if (isNotFuture) {
-      valid.add(`${year}-${month}`);
-    }
-  });
-  
-  return Array.from(valid)
-    .map(str => {
-      const [y, m] = str.split('-').map(Number);
-      return { year: y, month: m };
-    })
-    .sort((a, b) => a.year - b.year || a.month - b.month);
-});
-
-// 上一个有效月份
-const prevMonth = () => {
-  const current = { year: displayedYear.value, month: displayedMonth.value };
-  const validList = validMonths.value;
-  const currentIndex = validList.findIndex(
-    item => item.year === current.year && item.month === current.month
-  );
-  
-  if (currentIndex > 0) {
-    const prev = validList[currentIndex - 1];
-    displayedYear.value = prev.year;
-    displayedMonth.value = prev.month;
-  }
-};
-
-// 下一个有效月份
-const nextMonth = () => {
-  const current = { year: displayedYear.value, month: displayedMonth.value };
-  const validList = validMonths.value;
-  const currentIndex = validList.findIndex(
-    item => item.year === current.year && item.month === current.month
-  );
-  
-  if (currentIndex !== -1 && currentIndex < validList.length - 1) {
-    const next = validList[currentIndex + 1];
-    displayedYear.value = next.year;
-    displayedMonth.value = next.month;
-  }
-};
-
-// 按钮禁用状态
-const hasPrevValidMonth = computed(() => {
-  const current = { year: displayedYear.value, month: displayedMonth.value };
-  const currentIndex = validMonths.value.findIndex(
-    item => item.year === current.year && item.month === current.month
-  );
-  return currentIndex > 0;
-});
-
-const hasNextValidMonth = computed(() => {
-  const current = { year: displayedYear.value, month: displayedMonth.value };
-  const currentIndex = validMonths.value.findIndex(
-    item => item.year === current.year && item.month === current.month
-  );
-  return currentIndex !== -1 && currentIndex < validMonths.value.length - 1;
-});
 // 点击外部关闭月份选择器
 onMounted(() => {
   document.addEventListener("click", (e) => {
@@ -423,7 +375,7 @@ onMounted(() => {
 <style scoped>
 .calendar-container {
   font-family: "Helvetica Neue", Arial, sans-serif;
-  /*background: linear-gradient(135deg, #f0f9ff 0%, #e6f7ff 100%);*/
+  background: linear-gradient(135deg, #f0f9ff 0%, #e6f7ff 100%);
   border-radius: 12px;
   padding: 20px;
   box-shadow: 0 4px 15px rgba(0, 120, 150, 0.1);
@@ -583,30 +535,24 @@ onMounted(() => {
   bottom: 0;
   overflow-y: auto;
   max-height: calc(100% - 40px);
-  gap: 10px;
 }
 
 .timeline-post {
-  position: absolute;
-  height: 60px;
-  padding: 8px 12px;
-  color: #000;
-  border-radius: 4px;
+  position: relative;
+  height: 58px;
+  padding: 8px;
+  color: white;
+  cursor: pointer;
   transition: all 0.2s;
+  overflow: hidden;
+  z-index: 1;
   box-sizing: border-box;
-  border-left: 4px solid transparent;
 }
 
-/* 通过样式注入左侧颜色条（替代原背景色） */
-.timeline-post::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 0;
-  height: 100%;
-  width: 4px;
-  border-radius: 2px 0 0 2px;
-  background-color: var(--post-category-color);
+.timeline-post:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  z-index: 2;
 }
 
 .post-content {
@@ -623,41 +569,12 @@ onMounted(() => {
 }
 
 .post-title {
-  font-size: 1.1rem;
-  font-weight: 500;
+  font-size: 1.2rem;
+  font-weight: bold;
   white-space: nowrap;
-  /* 强制不换行 */
   overflow: hidden;
-  /* 隐藏溢出内容 */
   text-overflow: ellipsis;
-  /* 默认省略号 */
-  margin-top: 4px;
 }
-
-/* .scroll-title {
-  text-overflow: clip; 
-  animation: scroll-left 10s linear infinite; 
-}
-
-
-@keyframes scroll-left {
-  0% {
-    transform: translateX(0);
-  }
-  10% {
-    transform: translateX(0); 
-  }
-  90% {
-    transform: translateX(calc(-100% + 200px)); 
-  }
-  100% {
-    transform: translateX(calc(-100% + 200px)); 
-  }
-}
-
-.scroll-title:hover {
-  animation-play-state: paused;
-} */
 
 .year-indicator {
   font-size: 0.6rem;
@@ -677,70 +594,5 @@ onMounted(() => {
 .hint {
   color: #4299e1;
   cursor: pointer;
-}
-
-/* 时间轴切换按钮基础样式 */
-.timeline-nav-button {
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  border: none;
-  border-radius: 50%;
-  background-color: #45b7d1;
-  color: white;
-  font-size: 1rem;
-  cursor: pointer;
-  z-index: 5;
-  /* 确保在卡片上方 */
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-/* 左侧按钮位置 */
-.timeline-nav-button.left {
-  
-  width: 30px;
-  height: 30px;
-  left: -15px;
-  /* 向左超出容器一点 */
-}
-
-/* 右侧按钮位置 */
-.timeline-nav-button.right {
-  width: 40px;
-  height: 40px;
-  right: -1px;
-  /* 向右超出容器一点 */
-}
-
-/* 按钮交互效果 */
-.timeline-nav-button:hover {
-  background-color: #2b6cb0;
-  transform: translateY(-50%) scale(1.1);
-}
-
-/* 禁用状态（无可用月份时） */
-.timeline-nav-button:disabled {
-  background-color: #cbd5e0;
-  cursor: not-allowed;
-  transform: translateY(-50%);
-}
-
-.timeline-nav-button span {
-  display: inline-block;
-  width: 100%;
-  text-align: center;
-}
-
-/* 调整时间轴容器样式，避免按钮被遮挡 */
-.timeline-container {
-  position: relative;
-  height: 300px;
-  padding: 0 20px;
-  /* 左右预留空间，避免按钮遮挡内容 */
-  box-sizing: border-box;
 }
 </style>
