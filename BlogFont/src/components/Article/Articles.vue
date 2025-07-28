@@ -1,56 +1,45 @@
 <template>
   <div id="Content" style="height: 100vh">
     <div class="sidebar">
-      <!-- 分类列表 -->
-      <div
-        class="category"
-        v-for="(category, index) in categories"
-        :key="category.Id"
-        @click="scrollToCategory(index)"
-      >
-        <div class="category-content">
-          <img 
-        v-if="category && category.Id !== 1000" :src="getImageUrl(category.Img)" alt="图片丢失了!" />
-          <span class="category-name" 
-        v-if="category && category.Id !== 1000"
-            >{{ category.Name }} ({{ getArticleCounts()[category.Name] }})</span
-          >
+      <!-- 顶部圆形图片及随机句子区域 -->
+      <div class="sidebar-header">
+        <img class="header-avatar" :src="getImageUrl('Venti-2.webp')" alt="头像" />
+        <p class="daily-quote">{{ currentQuote }}</p>
+      </div>
+
+      <!-- 使用计算属性 filteredCategories 渲染列表 -->
+      <div class="categories-list">
+        <div class="category-item" v-for="(category, index) in filteredCategories" :key="category.Id"
+          @click="scrollToCategory(index)">
+          <img class="category-icon" :src="getImageUrl(category.Img)" alt="分类图标" />
+          <span class="category-name">
+            {{ category.Name }} ({{ getArticleCounts()[category.Name] || 0 }})
+          </span>
         </div>
       </div>
     </div>
     <div class="articles">
-      <!-- 文章分类 -->
-      <div
-        class="article-category"
-        v-for="(category, index) in categories"
-        :key="'category-' + category.Id"
-      >
-        <h3 v-if="category && category.Id !== 1000" :id="'category-' + index">{{ category.Name }}</h3>
-        <!-- 如果当前分类下有文章，则渲染文章列表 -->
+      <!-- 文章分类区域（保持不变） -->
+      <div class="article-category" v-for="(category, index) in categories" :key="'category-' + category.Id">
+        <h3 v-if="category && category.Id !== 1000" :id="'category-' + index">
+          {{ category.Name }}
+        </h3>
         <div class="articles-list" v-if="category.Articles.length > 0">
-          <article
-            class="article"
-            v-for="(article, articleIndex) in category.Articles"
-            :key="'article-' + articleIndex"
-            v-if="category && category.Id !== 1000"
-          >
+          <article class="article" v-for="(article, articleIndex) in category.Articles" :key="'article-' + articleIndex"
+            v-if="category && category.Id !== 1000">
             <div class="article-content">
-              <img
-                @click="getArticleContent(article.Id)"
-                :src="getImageUrl(article.Img)"
-                alt="文章图片丢失了!"
-              />
+              <img @click="getArticleContent(article.Id)" :src="getImageUrl(article.Img)" alt="文章图片丢失了!" />
               <span class="article-name">{{ article.Title }}</span>
             </div>
           </article>
         </div>
-        <!-- 如果当前分类下没有文章，则显示“敬请期待” -->
         <div v-else class="no-articles">
           <h3>————敬请期待————</h3>
         </div>
       </div>
     </div>
   </div>
+
 </template>
 
 <!--TODO： 增加算法类和实习经验类 -->
@@ -65,16 +54,32 @@ import { useRouter, useRoute } from "vue-router";
 const route = useRoute();
 const router = useRouter();
 
-import { ref, onMounted } from "vue";
-
-const categorycategories = ref([]);
+import { ref, onMounted, computed } from "vue";
 
 const { proxy } = getCurrentInstance();
+
+// 每日随机句子数组
+const dailyQuotes = [
+  "莫待花谢空折枝",
+  "过我嶙峋，拥我九春",
+  "蝴蝶飞来的夜晚绝非偶然",
+  "错过本身就是惊艳的组成部分",
+  "我喻我以长青，我拥此春待亭亭",
+  "Everything wins.",
+  "Die Luft der Freiheit weht.",
+  "放轻松，就当漫游地球",
+   "快乐与悲伤都是太沉重的字眼，我宁愿说今天跳了支不错的舞",
+  "人生如逆旅，我亦是行人",
+  "且将新火试新茶，诗酒趁年华",
+  "一点浩然气，千里快哉风",
+  "自歌自舞自开怀且喜无拘无碍",
+];
 const getImageUrl = (imgName) => {
   return `${proxy.$imageBaseUrl}${imgName}`;
 };
 
-const categories = ref([])
+const categories = ref([]);
+
 // 获取分类和文章数据
 const fetchCategories = async () => {
   try {
@@ -82,18 +87,17 @@ const fetchCategories = async () => {
     const data = await response.json();
 
     // 对每个分类下的文章进行降序排序
-    data.data.forEach(category => {
+    data.data.forEach((category) => {
       if (category.Articles && category.Articles.length > 0) {
         category.Articles.sort((a, b) => {
           return new Date(b.CreatedAt) - new Date(a.CreatedAt); // 降序排列
         });
       }
     });
-    
+
     categories.value = data.data;
 
     console.log(categories.value);
-    
 
     // 文章数量统计
     const articleCounts = {};
@@ -105,7 +109,12 @@ const fetchCategories = async () => {
     console.error("Failed to fetch categories:", error);
   }
 };
-
+// 过滤掉 Id === 1000 的分类
+const filteredCategories = computed(() => {
+  return categories.value.filter(
+    (category) => category && category.Id !== 1000
+  );
+});
 const getArticleCounts = () => {
   const articleCounts = localStorage.getItem("articleCounts");
   return articleCounts ? JSON.parse(articleCounts) : {};
@@ -126,13 +135,18 @@ const getArticleContent = (articleId) => {
   router.push(`/articleContent/${encodedId}`);
 };
 
+const currentQuote = ref("");
 onMounted(() => {
   fetchCategories();
+  // 根据日期计算随机句子索引（确保每天一句）
+  const day = new Date().getDate();
+  const randomIndex = day % dailyQuotes.length;
+  currentQuote.value = dailyQuotes[randomIndex];
 });
 
 onMounted(() => {
-  if (sessionStorage.getItem('refreshAfterEnter') === 'Articles') {
-    sessionStorage.removeItem('refreshAfterEnter'); // 清除标记
+  if (sessionStorage.getItem("refreshAfterEnter") === "Articles") {
+    sessionStorage.removeItem("refreshAfterEnter"); // 清除标记
     location.reload(); // 刷新页面
   }
 });
@@ -142,8 +156,8 @@ onMounted(() => {
 #Content {
   display: flex;
   height: 100vh;
+  flex-direction: row;
 }
-
 
 h2 {
   text-align: center;
@@ -158,11 +172,49 @@ h3 {
 }
 
 .sidebar {
-  width: 25%;
+  width: 27%;
   height: 100vh;
   overflow-y: auto;
   padding: 20px;
   box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+  /* 顶部区域与分类列表间距 */
+}
+
+/* 顶部头像和句子区域 */
+.sidebar-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 15px;
+  padding: 20px;
+  border-bottom: 1px solid #eee;
+  background-color:rgb(255, 255, 255, 0.5);
+  border-radius: 20px;
+}
+
+.header-avatar {
+  width: 200px;
+  height: 200px;
+  border-radius: 50%;
+  /* 圆形图片 */
+  object-fit: cover;
+  border: 3px solid #f0f0f0;
+}
+
+.daily-quote {
+  font-family: Cormorant SC, serif;
+  font-size: 20px;
+  color: #000000;
+  text-align: center;
+  line-height: 1.5;
+  max-width: 90%;
+  /* background-color:rgb(255, 255, 255, 0.5);
+  border: 1px solid white; */
+  border-radius: 20px;
+  transition: all 0.3s ease;
 }
 
 .articles {
@@ -173,44 +225,48 @@ h3 {
   box-sizing: border-box;
 }
 
-.category {
+/* 分类列表容器 */
+.categories-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* 单个分类项样式 */
+.category-item {
+  display:flex;
+  justify-content: center;
   cursor: pointer;
-  margin-bottom: 10px;
-  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 15px;
+  background-color: rgba(255, 255, 255, 0.5);
+  border: 1px solid white;
+  border-radius: 15px;
+  transition: all 0.3s ease;
 }
 
-.category img {
-  width: 100%;
-  height: 18vh;
-  display: block;
-  margin-bottom: 5px;
-  border-radius: 20px;
+.category-item:hover {
+  background-color: #f5f5f5;
+  transform: translateX(5px);
+}
 
+.category-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  /* 圆形图标 */
   object-fit: cover;
-  /* 保持比例，覆盖容器 */
-  object-position: center;
-  /* 居中裁剪 */
-}
-
-.category-content {
-  position: relative;
-  transition: all 0.3s ease-in-out;
-}
-
-.category-content {
-  transform: translateY(-5px);
-  box-shadow: 0 5px 10px rgba(0, 0, 0, 0.2);
 }
 
 .category-name {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  width: 100%;
-  background-color: rgba(0, 0, 0, 0.5);
-  color: white;
-  text-align: center;
-  padding: 5px 0;
+  font-size: 16px;
+  color: #333;
+  white-space: nowrap;
+  /* 防止文字换行 */
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .article-category {

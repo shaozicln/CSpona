@@ -21,43 +21,36 @@
         </p>
         <div class="profile-info">
           <div class="profile-item">
-            <i class="fas fa-microscope"></i>
             <span>🔭 I'm 长柄木勺, a sophomore student</span>
           </div>
           <div class="profile-item">
-            <i class="fas fa-seedling"></i>
             <span
               >🌱 I am learning computer technology related content and basic
               algorithmic knowledge</span
             >
           </div>
           <div class="profile-item">
-            <i class="fas fa-smile"></i>
             <span>😄 Tech stack: Javascript Vue Go Gin Mysql</span>
           </div>
           <div class="profile-item">
-            <i class="fas fa-comment"></i>
             <span
               >💬 I've done: two front-end blogs, some web mini-games and fun
               little features</span
             >
           </div>
           <div class="profile-item">
-            <i class="fas fa-lightbulb"></i>
             <span
               >🤔 Current mini-goal: algorithmic fundamentals and
               general-purpose technical implementations</span
             >
           </div>
           <div class="profile-item">
-            <i class="fas fa-bolt"></i>
             <span
               >⚡ Hobbies: gaming, watching anime and travelling, love to see
               different stories and landscapes</span
             >
           </div>
           <div class="profile-item">
-            <i class="fas fa-envelope"></i>
             <span>📫 How to reach me: changbingmushao@qq.com </span>
           </div>
         </div>
@@ -111,9 +104,7 @@ defineComponent({
 });
 
 const fullTexts = ref([
-  "你好, 新朋友 ..",
-  "上决浮云, 下绝地纪; 截云断岳, 剑出山倾 ..",
-  "你想活出怎样的人生 ?",
+  "欢迎你的到来, 新朋友 ..",
   "感受Coding带来的创造的乐趣吧 !",
 ]);
 

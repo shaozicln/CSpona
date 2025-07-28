@@ -80,6 +80,16 @@ const fetchCategories = async () => {
   try {
     const response = await fetch(`${URL}/categories-with-articles`);
     const data = await response.json();
+
+    // 对每个分类下的文章进行降序排序
+    data.data.forEach(category => {
+      if (category.Articles && category.Articles.length > 0) {
+        category.Articles.sort((a, b) => {
+          return new Date(b.CreatedAt) - new Date(a.CreatedAt); // 降序排列
+        });
+      }
+    });
+    
     categories.value = data.data;
 
     console.log(categories.value);
