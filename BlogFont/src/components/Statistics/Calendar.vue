@@ -340,6 +340,8 @@ const getValidMonthsInYear = (year) => {
 const validMonths = computed(() => {
   const valid = new Set();
   
+ valid.add(`${currentYear.value}-${currentMonth.value}`);
+
   posts.value.forEach(post => {
     const postStart = new Date(post.start);
     const year = postStart.getFullYear();

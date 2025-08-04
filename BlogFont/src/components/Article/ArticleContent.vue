@@ -43,30 +43,6 @@
   </div>
 </template>
 
-<!-- 改正：
- 一-整体变成无上栏大页面，左上角新增一个侧边栏图标，点击侧边栏，左侧left-side变为侧边栏Slide组件，鼠标移到对应题目上面会变大并显示出相应图片
- 二点击图标打开，侧边栏，然后左侧是目录和文章，点击可跳转，侧边栏布局如下：
-    |--------|
-    |我的头像|    
-    |--------|
-
- 《返回图标，会返回到Article》 《书本图标，会返回到现有content页面》 《首页图标，会返回到Home》
-    - 目录1
-    --- 文章1
-    - 目录2
-    --- 文章2
-    --- 文章3
-    - 目录3
-    --- 文章4
-    --- 文章5
-    --- 文章6
-    - 目录4
-    --- 文章7
-    --- 文章8
-    --- 文章9
-侧边栏背景为温迪
--->
-
 <script setup>
 import Comments from "./Comments.vue";
 import { useUserStore } from "@/stores/user";
@@ -449,10 +425,10 @@ function copyCode(button) {
 }
 
 .toc-box {
-  margin: 20px;
+  margin: 20px 0;
   background-color: rgba(240, 248, 255, 0.7);
   padding: 20px;
-  height: auto;
+  height: calc(100vh - 100px);
   overflow-y: auto;
   border-radius: 20px;
   border: solid 2px white;
@@ -576,8 +552,40 @@ pre code {
 }
 
 /* 处理可能的图片父容器问题 */
-.content-box > p img,
-.content-box > div img {
-  max-width: 100% !important; /* 针对嵌套在 p 或 div 中的图片 */
+/* 在.content-box样式下方添加 */
+.content-box {
+  max-width: 100%;
+  margin: 0 auto;
+  padding: 0 20px;
+  overflow-x: hidden; 
+  line-height: 1.8; /* 增加行高（核心） */
+  font-size: 16px; /* 优化字体大小 */
+}
+
+/* 增加段落间距 */
+.content-box p {
+  margin-bottom: 20px !important; /* 段落之间的空隙 */
+  margin-top: 0 !important;
+}
+
+/* 优化标题间距 */
+.content-box h1,
+.content-box h2,
+.content-box h3,
+.content-box h4 {
+  margin-top: 30px !important; /* 标题上方间距 */
+  margin-bottom: 15px !important; /* 标题下方间距 */
+  line-height: 1.5; /* 标题行高 */
+}
+
+/* 列表间距优化 */
+.content-box ul,
+.content-box ol {
+  margin-bottom: 20px !important;
+  padding-left: 30px !important;
+}
+
+.content-box li {
+  margin-bottom: 8px !important;
 }
 </style>
