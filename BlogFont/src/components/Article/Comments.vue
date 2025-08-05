@@ -3,8 +3,7 @@
     <div class="comment-section">
       <!-- 评论输入框 -->
       <div class="comment-input">
-        <el-input v-model="newComment" type="textarea" :rows="4" placeholder="写下你的评论..."
-          class="comment-textarea" />
+        <el-input v-model="newComment" type="textarea" :rows="4" placeholder="写下你的评论..." class="comment-textarea" />
         <el-button @click="submitComment" type="primary" class="comment-submit-btn">
           发表评论
         </el-button>
@@ -30,6 +29,9 @@
                     <button v-if="isAdmin" @click="pinComment(comment.Id, true)">
                       {{ comment.IsPinned === 1 ? "取消置顶" : "置顶" }}
                     </button>
+                    <button v-if="comment.User.Id == currentUserId" @click="toggleEdit(comment.Id, false)" @click.stop="toggleEdit(comment.Id, false)">
+                      编辑
+                    </button>
                     <button v-if="isAdmin || comment.User.Id == currentUserId" @click="deleteComment(comment.Id)">
                       删除
                     </button>
@@ -40,6 +42,15 @@
               <div class="comment-footer">
                 <span class="reply-btn" @click="toggleReply(comment.Id, false)">回复</span>
               </div>
+
+              <!-- 主评论编辑框 -->
+              <div v-if="activeEdits.parent === comment.Id" class="reply-input parent-reply-input" @click.stop>
+    <el-input v-model="editContents[comment.Id]" type="textarea" :rows="3" class="reply-textarea" />
+    <div class="reply-buttons">
+      <el-button @click="submitEdit(comment.Id, false)" type="primary" class="reply-submit-btn">保存</el-button>
+      <el-button @click="cancelEdit(false)" type="text" class="reply-cancel-btn">取消</el-button>
+    </div>
+  </div>
 
               <!-- 主评论回复框 -->
               <div v-if="activeReplies.parent === comment.Id" class="reply-input parent-reply-input">
@@ -76,6 +87,9 @@
                         @click="pinComment(reply.Id, false, comment.Id)">
                         {{ reply.IsPinned === 1 ? "取消置顶" : "置顶" }}
                       </button>
+                      <button v-if="reply.User.Id == currentUserId" @click="toggleEdit(reply.Id, true, comment.Id)">
+                        编辑
+                      </button>
                       <button v-if="isAdmin || reply.User.Id == currentUserId || comment.User.Id == currentUserId"
                         @click="deleteComment(reply.Id)">
                         删除
@@ -87,6 +101,15 @@
                 <div class="comment-footer">
                   <span class="reply-btn" @click="toggleReply(reply.Id, true)">回复</span>
                 </div>
+
+                <!-- 子评论编辑框 -->
+                <div v-if="activeEdits.child === reply.Id" class="reply-input child-reply-input" @click.stop>
+    <el-input v-model="editContents[reply.Id]" type="textarea" :rows="3" class="reply-textarea" />
+    <div class="reply-buttons">
+      <el-button @click="submitEdit(reply.Id, true)" type="primary" class="reply-submit-btn">保存</el-button>
+      <el-button @click="cancelEdit(true)" type="text" class="reply-cancel-btn">取消</el-button>
+    </div>
+  </div>
 
                 <!-- 子评论回复框（关键调整：嵌套在子评论content内） -->
                 <div v-if="activeReplies.child === reply.Id" class="reply-input child-reply-input">
@@ -126,7 +149,7 @@ const getImageUrl = (imgName) => {
 
 import { useArticleStore } from '@/stores/article';
 const articleStore = useArticleStore();
-const articleId =ref(articleStore.articleId);
+const articleId = ref(articleStore.articleId);
 
 
 const currentUserId = parseInt(localStorage.getItem("userId")) || 0;
@@ -165,7 +188,14 @@ const resetCommentState = () => {
 const toggleMenu = (commentId) => {
   menuStates.value = { ...menuStates.value, [commentId]: !menuStates.value[commentId] };
 };
-const closeMenu = () => { menuStates.value = {}; };
+const closeMenu = () => {
+  menuStates.value = {};
+  // 关闭所有编辑框
+  // activeEdits.value = { parent: null, child: null };
+};
+
+const activeEdits = ref({ parent: null, child: null }); // 编辑框状态
+const editContents = ref({}); // 编辑内容存储
 
 // 置顶功能
 const pinComment = async (commentId, isParent, parentCommentId = null) => {
@@ -195,7 +225,7 @@ const pinComment = async (commentId, isParent, parentCommentId = null) => {
         });
       }
     }
-      fetchComments();
+    fetchComments();
   } catch (error) {
     console.error("置顶失败:", error);
   }
@@ -209,21 +239,87 @@ const fetchComments = async () => {
     if (!response.ok) throw new Error("获取评论失败");
     const data = await response.json();
     comments.value = (data.data || []).sort((a, b) => {
-        // 置顶评论优先
+      // 置顶评论优先
       if (a.IsPinned === 1 && b.IsPinned !== 1) return -1;
       if (a.IsPinned !== 1 && b.IsPinned === 1) return 1;
 
-        // 同为置顶评论，按 PinnedAt 降序（后置顶在前）
+      // 同为置顶评论，按 PinnedAt 降序（后置顶在前）
       if (a.IsPinned === 1 && b.IsPinned === 1) {
         return new Date(b.PinnedAt) - new Date(a.PinnedAt);
       }
-        // 同为非置顶评论，按创建时间降序
+      // 同为非置顶评论，按创建时间降序
       return new Date(b.CreatedAt) - new Date(a.CreatedAt);
-    
-      
-    });  
+
+
+    });
   } catch (error) {
     console.error("获取评论失败:", error);
+  }
+};
+
+const toggleEdit = (commentId, isChild = false, parentCommentId = null) => {
+  // 确保ID类型统一（转换为数字）
+  const numericCommentId = Number(commentId);
+  const key = isChild ? "child" : "parent";
+  
+  // 关闭其他编辑框
+  activeEdits.value = { parent: null, child: null };
+  
+  if (activeEdits.value[key] === numericCommentId) {
+    activeEdits.value[key] = null;
+  } else {
+    // 获取评论内容作为初始编辑值
+    let targetComment;
+    if (isChild) {
+      // 修复parentCommentId可能为字符串的问题
+      const numericParentId = Number(parentCommentId);
+      const parentComment = comments.value.find(c => c.Id === numericParentId);
+      targetComment = parentComment?.Replies.find(r => r.Id === numericCommentId);
+    } else {
+      targetComment = comments.value.find(c => c.Id === numericCommentId);
+    }
+    
+    if (targetComment) {
+      editContents.value[numericCommentId] = targetComment.Idea;
+      activeEdits.value = { ...activeEdits.value, [key]: numericCommentId };
+    } else {
+      console.error('未找到评论:', { commentId: numericCommentId, isChild, parentCommentId });
+    }
+  }
+};
+
+// 取消编辑
+const cancelEdit = (isChild = false) => {
+  activeEdits.value[isChild ? "child" : "parent"] = null;
+};
+
+// 提交编辑
+const submitEdit = async (commentId, isChild = false) => {
+  const content = editContents.value[commentId];
+  if (!content || !content.trim()) {
+    alert("评论内容不能为空哦 (＞﹏＜)");
+    return;
+  }
+
+  try {
+    const response = await fetch(`${URL}/comments/${commentId}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ idea: content }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || `HTTP error! status: ${response.status}`);
+    }
+
+    // 关闭编辑框并刷新评论列表
+    activeEdits.value[isChild ? "child" : "parent"] = null;
+    fetchComments();
+    alert("编辑成功 (^_^)");
+  } catch (error) {
+    console.error("提交编辑失败:", error);
+    alert(`编辑失败啦Σ(っ °Д °;)っ\n原因: ${error.message}`);
   }
 };
 
@@ -324,11 +420,11 @@ const cancelReply = (isChild = false) => {
 };
 
 
-const replyExpansionState = ref({}); 
+const replyExpansionState = ref({});
 
 // 切换显示所有回复
 const toggleShowAllReplies = (comment) => {
-    // comment.showAllReplies = !comment.showAllReplies;
+  // comment.showAllReplies = !comment.showAllReplies;
   // 操作保存的状态
   replyExpansionState.value[comment.Id] = !replyExpansionState.value[comment.Id];
 };
@@ -347,7 +443,7 @@ const sortedReplies = (comment) => {
     if (a.IsPinned === 1 && b.IsPinned !== 1) return -1;
     if (a.IsPinned !== 1 && b.IsPinned === 1) return 1;
 
-     // 同为置顶回复，按 PinnedAt 降序（后置顶在前）
+    // 同为置顶回复，按 PinnedAt 降序（后置顶在前）
     if (a.IsPinned === 1 && b.IsPinned === 1) {
       return new Date(b.PinnedAt) - new Date(a.PinnedAt); // 关键修改：降序排列
     }
@@ -355,7 +451,7 @@ const sortedReplies = (comment) => {
     // 同为非置顶回复，按创建时间降序
     return new Date(b.CreatedAt) - new Date(a.CreatedAt);
   });
- const isExpanded = replyExpansionState.value[comment.Id] || false;
+  const isExpanded = replyExpansionState.value[comment.Id] || false;
   return isExpanded ? sorted : sorted.slice(0, 2);
 };
 
@@ -557,7 +653,8 @@ defineExpose({
 
 .child-reply-input {
   margin-top: 10px;
-  margin-left: 0; /* 子评论回复框不再强制缩进 */
+  margin-left: 0;
+  /* 子评论回复框不再强制缩进 */
 }
 
 .reply-input textarea {

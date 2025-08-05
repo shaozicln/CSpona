@@ -17,7 +17,7 @@
     "blogfont": "file:",
     "chart.js": "^4.4.3",
     "dompurify": "^3.2.6",
-    "element-plus": "^2.10.4",
+    "element-plus": "^2.10.5",
     "github-markdown-css": "^5.8.1",
     "highlight.js": "^11.11.1",
     "markdown-loader": "^8.0.0",

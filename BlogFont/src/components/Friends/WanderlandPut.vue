@@ -239,25 +239,12 @@ function insertText(prefix, suffix) {
 // 图片上传逻辑（与原有编辑器逻辑一致）
 function handleImageUpload(event) {
   const files = event.target.files;
-
-   const maxSize = 1 * 1024 * 1024;
-    if (files.size > maxSize) {
-        alert("头像大小不要超过1MB");
-        e.target.value = "";
-        return;
-    }
-
-    // 验证文件类型
-    if (!files.type.startsWith("image/")) {
-        alert("请选择图片文件");
-        e.target.value = "";
-        return;
-    }
   if (files && files.length > 0) {
     const fileToUpload = files[0];
     const formData = new FormData();
-    formData.append('img', fileToUpload);
+    formData.append('img', fileToUpload); // 确保与后端参数名一致
     
+    // 上传图片到服务器
     fetch(`${URL}/upload-image`, {
       method: 'POST',
       body: formData,
@@ -267,7 +254,9 @@ function handleImageUpload(event) {
       return response.json();
     })
     .then(data => {
+      // 假设后端返回格式为 { imageUrl: "文件名.png" }
       imageUrl.value = `${URL2}${data.imageUrl}`;
+      console.log('图片已上传，完整URL:', imageUrl.value);
     })
     .catch(error => {
       console.error('图片上传失败:', error);
@@ -276,19 +265,41 @@ function handleImageUpload(event) {
   }
 }
 
-// 插入图片
+// 修复插入图片函数
 function insertImage() {
-  let imageMarkdown = "";
-  if (imageUrl.value) { 
-    imageMarkdown = `![Image](${imageUrl.value})`;
-  } 
-
-  if (imageMarkdown) {
-    insertText(imageMarkdown, "");
-    showImageDialog.value = false;
-    imageUrl.value = "";
+  if (!imageUrl.value) {
+    alert("请先上传图片");
+    return;
   }
+  
+  // 生成正确的Markdown图片格式
+  const imageMarkdown = `![Image](${imageUrl.value})`;
+  
+  // 获取textarea元素
+  const textareaEl = textarea.value;
+  if (!textareaEl) return;
+  
+  // 在光标位置插入图片标记
+  const start = textareaEl.selectionStart;
+  const end = textareaEl.selectionEnd;
+  
+  // 插入图片标记
+  content.value = 
+    content.value.substring(0, start) + 
+    imageMarkdown + 
+    content.value.substring(end);
+  
+  // 重置光标位置
+  nextTick(() => {
+    textareaEl.focus();
+    textareaEl.selectionStart = textareaEl.selectionEnd = start + imageMarkdown.length;
+  });
+  
+  // 关闭弹窗并重置图片URL
+  showImageDialog.value = false;
+  imageUrl.value = "";
 }
+
 
 // 更新分类ID
 function updateCategoryId() {

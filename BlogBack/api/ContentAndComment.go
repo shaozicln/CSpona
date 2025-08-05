@@ -229,3 +229,59 @@ func GetCommentWithReplies(c *gin.Context) {
     c.JSON(http.StatusOK, gin.H{"data": comment})
 }
 
+// 更新评论内容API
+func PutComment(c *gin.Context) {
+    // 获取评论ID
+    commentIDStr := c.Param("id")
+    commentID, err := strconv.Atoi(commentIDStr)
+    if err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "无效的评论ID"})
+        return
+    }
+
+    // 解析请求体
+    var request struct {
+        Idea string `json:"idea"`
+    }
+    if err := c.ShouldBindJSON(&request); err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "无效的请求参数"})
+        return
+    }
+
+    // 验证评论内容
+    if request.Idea == "" {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "评论内容不能为空"})
+        return
+    }
+
+    // 查询评论是否存在
+    var comment Comment
+    if err := db.First(&comment, commentID).Error; err != nil {
+        c.JSON(http.StatusNotFound, gin.H{"error": "评论不存在"})
+        return
+    }
+
+    // 保存原始评论内容用于返回
+    originalIdea := comment.Idea
+
+    // 更新评论内容
+    if err := db.Model(&comment).Updates(map[string]interface{}{
+        "idea":       request.Idea,
+        "updated_at": time.Now(),
+    }).Error; err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "更新评论失败"})
+        return
+    }
+
+    // 预加载用户信息
+    db.Preload("User").First(&comment, commentID)
+
+    // 返回结果（包含原始内容）
+    c.JSON(http.StatusOK, gin.H{
+        "message": "更新成功",
+        "data": gin.H{
+            "comment":       comment,
+            "original_idea": originalIdea,
+        },
+    })
+}

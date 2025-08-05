@@ -49,6 +49,7 @@ func InitRouter() *gin.Engine {
 		router.GET("/comments/:articleId", api.GetComment)
 		router.GET("/commentsReplies/:commentId", api.GetCommentWithReplies)
 		router.PUT("/comments/:id/pin", api.PinComment)
+		router.PUT("/comments/:id", api.PutComment)
 
 		//...留言板路由... Message.go
 		router.GET("/commentBoard", api.GetMessage)
