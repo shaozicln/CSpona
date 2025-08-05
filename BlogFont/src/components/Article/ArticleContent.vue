@@ -24,7 +24,13 @@
       <div class="right-side">
         <div class="white-box">
           <div class="title-box">
-            <h1>{{ article.Title }}</h1>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+      <h1>{{ article.Title }}</h1>
+      <!-- 使用Font Awesome的编辑图标 -->
+      <button v-if="userQx === 'A'" class="edit-btn" @click="showEditModal = true">
+        <i class="fas fa-edit"></i>
+      </button>
+    </div>
             <p>
               浏览量：{{ article.ViewCount }} | 创建时间：{{
                 TimeFormat(article.CreatedAt)
@@ -41,6 +47,13 @@
   <div class="comment-box">
     <Comments :article-id="articleId" />
   </div>
+  <!-- 编辑弹窗遮罩层 -->
+  <div v-if="showEditModal" class="modal-overlay" @click="showEditModal = false">
+    <!-- 编辑弹窗内容 - 阻止事件冒泡 -->
+    <div class="modal-content" @click.stop>
+      <ArticlePut :article-id="articleId" :article-data="article" @close="showEditModal = false" />
+    </div>
+  </div>
 </template>
 
 <script setup>
@@ -48,6 +61,11 @@ import Comments from "./Comments.vue";
 import { useUserStore } from "@/stores/user";
 const userStore = useUserStore();
 const currentUserId = ref(localStorage.getItem("userId") || 0);
+import { library } from '@fortawesome/fontawesome-svg-core';
+import { faEdit } from '@fortawesome/free-solid-svg-icons';
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
+// 注册图标
+library.add(faEdit);
 
 // 获取全局URL属性
 import { getCurrentInstance } from "vue";
@@ -59,10 +77,15 @@ import { ref, onMounted, computed, watch } from "vue";
 import { useRouter, useRoute } from "vue-router";
 const router = useRouter();
 import { nextTick } from "vue";
-import { decodeArticleId } from '@/utils/utils.js';  
+import { decodeArticleId } from "@/utils/utils.js";
+import ArticlePut from "./ArticlePut.vue";
 
 const instance = getCurrentInstance();
 const URL = instance?.appContext.config.globalProperties.URL;
+
+// 文章更新
+const userQx = ref(localStorage.getItem('userQx') || '');
+const showEditModal = ref(false); //控制编辑弹窗显示
 
 // 初始化获取文章ID
 const route = useRoute();
@@ -79,7 +102,6 @@ const loadArticleId = () => {
   localStorage.setItem("articleId", articleId.value);
 };
 
-
 // 监听路由变化
 watch(
   () => route.params.articleId,
@@ -88,7 +110,7 @@ watch(
   }
 );
 
-import { useArticleStore } from '@/stores/article';
+import { useArticleStore } from "@/stores/article";
 const articleStore = useArticleStore();
 
 watch(
@@ -102,7 +124,6 @@ watch(
   },
   { immediate: true }
 );
-
 
 // 加载新文章内容
 const article = ref("");
@@ -136,52 +157,12 @@ const renderer = {
       }</code>${copyButton}</pre></div>`;
   },
 
-//   image() {
-//   // 参数解析
-//   let href, title, text;
-
-//   if (arguments.length >= 3) {
-//     [href, title, text] = arguments;
-//   } else if (arguments[0] && typeof arguments[0] === "object") {
-//     const token = arguments[0];
-//     href = token.href;
-//     title = token.title;
-//     text = token.text;
-//   } else {
-//     console.error("无法解析图片参数:", arguments);
-//     href = "";
-//   }
-
-//   // 确保 href 是字符串
-//   if (typeof href !== "string") {
-//     href = String(href);
-//   }
-
-//   // 编码 URL 并创建图片标签
-// return `<img src="${encodeURI(href)}" 
-//                alt="${(text || "").replace(/"/g, "&quot;")}" 
-//                title="${(title || "").replace(/"/g, "&quot;")}"
-//                class="markdown-image"
-//                style="
-//                  max-width: 100% !important; /* 关键：不超过父容器宽度 */
-//                  width: auto; 
-//                  height: auto;
-//                  display: block;
-//                  margin: 15px auto; /* 居中显示 */
-//                  border-radius: 4px;
-//                  background: #f8f8f8;
-//                  border: 1px solid #eee;
-//                  padding: 4px;
-//                  box-sizing: border-box;
-//                ">`;
-// },
 };
 
 // 确保在解析 Markdown 之前应用自定义渲染器
 marked.setOptions({
   gfm: true,
   breaks: true,
-  
 });
 
 marked.use(renderer);
@@ -221,7 +202,6 @@ const renderedContent = computed(() => {
 
   return content;
 });
-
 
 // 判断字符串是否为网址
 function isUrl(text) {
@@ -320,7 +300,6 @@ onMounted(() => {
     hljs.highlightAll();
     bindCopyButtons();
   });
-  
 });
 
 // 滚动到相应内容
@@ -384,7 +363,7 @@ function copyCode(button) {
   display: flex;
   flex-direction: column;
   align-items: center;
-  height:85vh;
+  height: 85vh;
   overflow: auto;
 }
 
@@ -417,7 +396,7 @@ function copyCode(button) {
   max-width: 100%;
   margin: 0 auto;
   padding: 0 20px;
-  overflow-x: hidden; 
+  overflow-x: hidden;
 }
 
 .comment-box {
@@ -507,7 +486,6 @@ pre code {
   margin: 0 auto;
 }
 
-
 .toc-box li.active a {
   color: rgba(0, 0, 0, 0.2);
   /* 高亮颜色 */
@@ -546,8 +524,10 @@ pre code {
 
 /* 强制 Markdown 图片继承容器宽度限制 */
 .markdown-image {
-  max-width: 100% !important; /* 强制继承父容器宽度 */
-  height: auto !important; /* 保持比例 */
+  max-width: 100% !important;
+  /* 强制继承父容器宽度 */
+  height: auto !important;
+  /* 保持比例 */
   display: block !important;
 }
 
@@ -557,14 +537,17 @@ pre code {
   max-width: 100%;
   margin: 0 auto;
   padding: 0 20px;
-  overflow-x: hidden; 
-  line-height: 1.8; /* 增加行高（核心） */
-  font-size: 16px; /* 优化字体大小 */
+  overflow-x: hidden;
+  line-height: 1.8;
+  /* 增加行高（核心） */
+  font-size: 16px;
+  /* 优化字体大小 */
 }
 
 /* 增加段落间距 */
 .content-box p {
-  margin-bottom: 20px !important; /* 段落之间的空隙 */
+  margin-bottom: 20px !important;
+  /* 段落之间的空隙 */
   margin-top: 0 !important;
 }
 
@@ -573,9 +556,12 @@ pre code {
 .content-box h2,
 .content-box h3,
 .content-box h4 {
-  margin-top: 30px !important; /* 标题上方间距 */
-  margin-bottom: 15px !important; /* 标题下方间距 */
-  line-height: 1.5; /* 标题行高 */
+  margin-top: 30px !important;
+  /* 标题上方间距 */
+  margin-bottom: 15px !important;
+  /* 标题下方间距 */
+  line-height: 1.5;
+  /* 标题行高 */
 }
 
 /* 列表间距优化 */
@@ -587,5 +573,42 @@ pre code {
 
 .content-box li {
   margin-bottom: 8px !important;
+}
+
+.edit-btn {
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  opacity: 0.7;
+  transition: opacity 0.3s;
+}
+
+.edit-btn:hover {
+  opacity: 1;
+}
+
+/* 新增弹窗样式 */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  width: 90%;
+  max-width: 1000px;
+  max-height: 90vh;
+  overflow-y: auto;
+  background-color: white;
+  border-radius: 8px;
+  padding: 20px;
 }
 </style>

@@ -107,28 +107,60 @@ func PostArticle(c *gin.Context) {
 }
 
 func PutArticle(c *gin.Context) {
-	id := c.Param("id")
+    id := c.Param("id")
+    
+    // 先从数据库获取原始文章信息
+    var article Article
+    if err := db.First(&article, id).Error; err != nil {
+        c.JSON(http.StatusNotFound, gin.H{"error": "Article not found"})
+        return
+    }
 
-	// 绑定请求体到Article结构体
-	var article Article
-	if err := c.BindJSON(&article); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request"})
-		return
-	}
-	id1, _ := strconv.ParseUint(id, 10, 64)
-	article.Id = uint(id1)
-	// 执行更新操作
-	if result := db.Model(&Article{}).Where("id = ?", id).Updates(Article{
-		Id:         article.Id,
-		Title:      article.Title,
-		Content:    article.Content,
-		CategoryId: article.CategoryId,
-		UserId:     article.UserId,
-	}); result.Error != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
-	} else {
-		c.JSON(http.StatusOK, gin.H{"data": article})
-	}
+    // 处理文件上传（背景图）
+    file, err := c.FormFile("img")
+    if err == nil { // 如果有上传背景图文件
+        baseDir := utils.GetImageBaseDir()
+        filename := filepath.Base(file.Filename)
+        savePath := filepath.Join(baseDir, filename)
+        savePath = strings.ReplaceAll(savePath, "\\", "/")
+
+        // 创建目录并保存文件
+        _ = os.MkdirAll(baseDir, os.ModePerm)
+        if err := c.SaveUploadedFile(file, savePath); err == nil {
+            article.Img = filename // 更新背景图文件名
+        }
+    }
+
+    // 处理其他字段，若前端传递的参数为空则使用原始数据
+    title := c.PostForm("title")
+    if title != "" {
+        article.Title = title
+    }
+
+    content := c.PostForm("content")
+    if content != "" {
+        article.Content = content
+    }
+
+    categoryId := c.PostForm("category_id")
+    if categoryId != "" {
+        cid, _ := strconv.Atoi(categoryId)
+        article.CategoryId = uint(cid)
+    }
+
+    userId := c.PostForm("user_id")
+    if userId != "" {
+        uid, _ := strconv.Atoi(userId)
+        article.UserId = uint(uid)
+    }
+
+    // 执行更新操作
+    if result := db.Save(&article); result.Error != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
+        return
+    }
+
+    c.JSON(http.StatusOK, gin.H{"data": article})
 }
 
 func DeleteArticle(c *gin.Context) {

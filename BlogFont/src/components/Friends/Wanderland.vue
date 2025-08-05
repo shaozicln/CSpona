@@ -12,26 +12,12 @@
 
         <!-- 分类列表 -->
         <div v-else>
-          <div
-            v-for="category in categories"
-            :key="category.Id"
-            class="category-item"
-          >
+          <div v-for="category in categories" :key="category.Id" class="category-item">
             <!-- 特殊处理ID为1000的分类 -->
             <div v-if="category.Id === 1000" class="special-articles">
-              <div
-                v-for="articleItem in category.Articles"
-                :key="articleItem.Id"
-                class="article-card"
-                @click="loadAndShowArticle(articleItem.Id)"
-                :class="{ 'active-article': articleItem.Id === articleId }"
-              >
-                <img
-                  :src="getImageUrl(articleItem.Img)"
-                  alt="文章缩略图"
-                  class="article-img"
-                  loading="lazy"
-                />
+              <div v-for="articleItem in category.Articles" :key="articleItem.Id" class="article-card"
+                @click="loadAndShowArticle(articleItem.Id)" :class="{ 'active-article': articleItem.Id === articleId }">
+                <img :src="getImageUrl(articleItem.Img)" alt="文章缩略图" class="article-img" loading="lazy" />
                 <div class="article-info">
                   <h4 class="article-title">{{ articleItem.Title }}</h4>
                   <p class="article-meta">
@@ -53,10 +39,7 @@
     <!-- 右侧文章内容区 -->
     <div class="content">
       <!-- 文章错误提示 -->
-      <div
-        v-if="articleError && !isLoadingArticle"
-        class="error-message article-error"
-      >
+      <div v-if="articleError && !isLoadingArticle" class="error-message article-error">
         {{ articleError }}
         <button @click="retryLoadArticle" class="retry-btn">重试</button>
       </div>
@@ -65,33 +48,30 @@
       <div v-else-if="article && article.Title" class="article-content">
         <!-- 文章标题区 -->
         <div class="white-box title-section">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            
           <h1 class="article-main-title">{{ article.Title }}</h1>
+            <!-- 使用Font Awesome的编辑图标 -->
+            <button v-if="isArticleOwner === true" class="edit-btn" @click="showEditModal = true">
+              <i class="fas fa-edit"></i>
+            </button>
+          </div>
           <div class="article-meta-main">
             <span>作者: {{ getAuthorName(article.UserId) }}</span>
             <span>发布时间: {{ TimeFormat(article.CreatedAt) }}</span>
             <span>浏览量: {{ article.ViewCount || 0 }}</span>
             <span>评论数: {{ article.CommentCount || 0 }}</span>
           </div>
-          <div
-            class="content-box"
-            v-html="renderMarkdown(article.Content)"
-          ></div>
+          <div class="content-box" v-html="renderMarkdown(article.Content)"></div>
         </div>
 
         <!-- 评论区 -->
         <div class="white-box comment-section" v-if="!isLoadingArticle">
-          <h3
-            class="comment-title"
-            style="text-align: center; font-size: 40px; font-family: cursive"
-          >
+          <h3 class="comment-title" style="text-align: center; font-size: 40px; font-family: cursive">
             评论区
           </h3>
           <!-- 使用更唯一的key强制评论组件在文章ID变化时重新渲染 -->
-          <Comments
-            ref="commentsRef"
-            :article-id="articleId"
-            :key="'comments-' + articleId"
-          />
+          <Comments ref="commentsRef" :article-id="articleId" :key="'comments-' + articleId" />
         </div>
       </div>
 
@@ -107,6 +87,14 @@
 
   <div v-if="isLoadingArticle" class="debug">
     加载状态: {{ isLoadingArticle }} | 文章ID: {{ articleId }}
+  </div>
+
+   <!-- 编辑弹窗遮罩层 -->
+  <div v-if="showEditModal" class="modal-overlay" @click="showEditModal = false">
+    <!-- 编辑弹窗内容 - 阻止事件冒泡 -->
+    <div class="modal-content" @click.stop>
+      <WanderlandPut :article-id="articleId" :article-data="article" @close="showEditModal = false" />
+    </div>
   </div>
 </template>
 
@@ -130,6 +118,17 @@ import "highlight.js/styles/github.css";
 import { useArticleStore } from "@/stores/article";
 import { decodeArticleId } from "@/utils/utils.js";
 
+import { library } from '@fortawesome/fontawesome-svg-core';
+import { faEdit } from '@fortawesome/free-solid-svg-icons';
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
+import WanderlandPut from "./WanderlandPut.vue";
+// 注册图标 
+library.add(faEdit);
+
+// 文章更新
+const userId = ref(localStorage.getItem('userId') || '');
+const showEditModal = ref(false); //控制编辑弹窗显示
+
 // 路由与状态管理
 const userStore = useUserStore();
 const router = useRouter();
@@ -149,6 +148,7 @@ const isLoadingCategories = ref(true); // 分类加载状态
 const isLoadingArticle = ref(false);
 const categoryError = ref(null);
 const articleError = ref(null);
+const isArticleOwner = ref(false);
 
 // 获取全局实例与URL
 const instance = getCurrentInstance();
@@ -198,6 +198,9 @@ const fetchArticleDetail = async (id) => {
     Content: data.Content ?? data.content ?? "",
     Title: data.Title ?? data.title ?? "未命名文章",
   };
+
+  // 判断文章作者ID与当前用户ID是否相等
+  isArticleOwner.value = String(article.value.UserId) === String(userId.value); // 转为字符串避免类型问题
 
   if (data.UserId) await fetchUserInfo(data.UserId);
 };
@@ -277,9 +280,8 @@ const renderer = new marked.Renderer();
 renderer.code = (code, language) => {
   const validLanguage =
     !language || !hljs.getLanguage(language) ? "plaintext" : language;
-  return `<pre class="hljs"><code class="hljs language-${validLanguage}">${
-    hljs.highlightAuto(code).value
-  }</code></pre>`;
+  return `<pre class="hljs"><code class="hljs language-${validLanguage}">${hljs.highlightAuto(code).value
+    }</code></pre>`;
 };
 // 如果是本地文件路径，添加前缀
 renderer.image = function () {
@@ -838,5 +840,78 @@ code {
   .article-card {
     min-width: 280px;
   }
+}
+
+.content-box {
+  max-width: 100%;
+  margin: 0 auto;
+  padding: 0 20px;
+  overflow-x: hidden;
+  line-height: 1.8;
+  /* 增加行高（核心） */
+  font-size: 16px;
+  /* 优化字体大小 */
+}
+
+.content-box p {
+  margin-bottom: 20px !important;
+  margin-top: 0 !important;
+}
+
+.content-box h1,
+.content-box h2,
+.content-box h3,
+.content-box h4 {
+  margin-top: 30px !important;
+  margin-bottom: 15px !important;
+  line-height: 1.5;
+}
+
+.content-box ul,
+.content-box ol {
+  margin-bottom: 20px !important;
+  padding-left: 30px !important;
+}
+
+.content-box li {
+  margin-bottom: 8px !important;
+}
+
+
+.edit-btn {
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  opacity: 0.7;
+  transition: opacity 0.3s;
+}
+
+.edit-btn:hover {
+  opacity: 1;
+}
+
+/* 新增弹窗样式 */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  width: 90%;
+  max-width: 1000px;
+  max-height: 90vh;
+  overflow-y: auto;
+  background-color: white;
+  border-radius: 8px;
+  padding: 20px;
 }
 </style>
