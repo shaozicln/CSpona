@@ -6,7 +6,7 @@ import MyHead from './components/MyHead.vue'
   <!-- <Head id="h"></Head> -->
   <img id="background" src="../public/Pictures/background.jpg">
   <div id="app">
-    <MyHead />
+    <MyHead v-if="!$route.meta.hideMyHead"/>
     <router-view />
   </div>
 

@@ -17,6 +17,7 @@ import (
 type User struct {
 	Id           uint      `gorm:"primary key"`
 	Email        string    `gorm:"type:varchar(255)" column:"email"`
+	EmailStmp    string    `gorm:"type:varchar(255)" column:"email_stmp													"`
 	Username     string    `gorm:"type:varchar(255)" column:"username"`
 	Password     string    `gorm:"type:varchar(255)" column:"password"`
 	ArticleCount int       `gorm:"type:int" column:"article_count"`

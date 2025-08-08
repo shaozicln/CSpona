@@ -18,6 +18,10 @@ import Slide from "./components/Slide.vue";
 import User from "./components/CSpona/User.vue";
 import Wanderland from "./components/Friends/Wanderland.vue";
 import Log from "./components/CSpona/Log.vue";
+import Tools from "./components/CSpona/Tools/List.vue";
+import NotFound from "./components/NotFound.vue";
+import TaskReminder from "./components/CSpona/Tools/TaskReminder.vue";
+import Celebration from "./components/CSpona/Tools/Celebration.vue";
 
 const routes = [
   {
@@ -109,14 +113,35 @@ const routes = [
     path: "/articleContent/:articleId",
     name: "ArticleContent",
     component: ArticleContent,
-    meta: {
-      hideMyHead: true,
-    },
   },
   {
     path: "/slide",
     name: "Slide",
     component: Slide,
+  },
+  {
+    path: "/tools",
+    name: "Tools",
+    component: Tools,
+    meta: { hideMyHead: true },
+  },
+  {
+    path: "/task-reminder",
+    name: "TaskReminder",
+    component: TaskReminder,
+    meta: { hideMyHead: true },
+  },
+  {
+    path: "/celebration",
+    name: "Celebration",
+    component: Celebration,
+    meta: { hideMyHead: true },
+  },
+  {
+    path: "/:pathMatch(.*)*", // 匹配所有未定义的路由
+    name: "NotFound",
+    component: NotFound,
+    meta: { hideMyHead: true },
   },
 ];
 
@@ -126,8 +151,8 @@ const router = createRouter({
 });
 
 router.beforeEach((to, from, next) => {
-  if (sessionStorage.getItem('shouldRefresh') === 'true') {
-    sessionStorage.removeItem('shouldRefresh'); // 清除标记
+  if (sessionStorage.getItem("shouldRefresh") === "true") {
+    sessionStorage.removeItem("shouldRefresh"); // 清除标记
     location.reload(); // 刷新页面
     // 注意：这里不调用 next()，因为刷新后会自动加载目标路由
     return;

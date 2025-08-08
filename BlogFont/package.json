@@ -16,6 +16,7 @@
     "@fortawesome/vue-fontawesome": "^3.0.8",
     "blogfont": "file:",
     "chart.js": "^4.4.3",
+    "date-fns": "^4.1.0",
     "dompurify": "^3.2.6",
     "element-plus": "^2.10.5",
     "github-markdown-css": "^5.8.1",
@@ -30,6 +31,9 @@
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^5.0.5",
+    "autoprefixer": "^10.4.21",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^4.1.11",
     "vite": "^5.3.1"
   }
 }

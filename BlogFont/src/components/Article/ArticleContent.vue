@@ -356,6 +356,7 @@ function copyCode(button) {
   grid-template-columns: 1fr 3fr;
   grid-gap: 20px;
   padding: 20px;
+  height: calc(100vh - 40px);
 }
 
 .left-side {
@@ -363,6 +364,7 @@ function copyCode(button) {
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   height: 85vh;
   overflow: auto;
 }

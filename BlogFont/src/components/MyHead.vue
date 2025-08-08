@@ -81,7 +81,8 @@ const navItems = ref([
     text: 'CSpona:)', 
     children: [
       { text: '个人中心', to: '/user' },
-      { text: '登录/注册', to: '/login' }
+      { text: '登录/注册', to: '/login' },
+      { text: '工具箱', to: '/tools' },
     ],
     isOpen: false 
   },
