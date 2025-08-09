@@ -70,6 +70,13 @@ func InitRouter() *gin.Engine {
 		//...建议... Advice.go
 		router.GET("/advice", api.GetAdvice)
 		router.POST("/advice", api.PostAdvice)
+
+		//...任务提醒... Reminder.go
+		router.GET("/reminder/:user_id", api.GetUserReminders) // 获取指定用户的提醒
+		router.POST("/reminder", api.PostReminder)
+		router.PUT("/reminder/:id", api.PutReminder)
+		router.DELETE("/reminder/:id", api.DeleteReminder)
+		router.POST("/reminder/:id/email", api.SendReminderEmail)
 	}
 	return r
 }

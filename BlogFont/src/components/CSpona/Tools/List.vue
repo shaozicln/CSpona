@@ -10,7 +10,7 @@
         <section class="con" @click="handleContainerClick">
             <div class="slider">
                 <!-- 轮播项通过v-for渲染 -->
-                <div class="slide" :class="{ active: currentIndex === index }" v-for="(slide, index) in slides"
+                <div class="slide" :class="{ active: !isInitialLoad&&currentIndex === index }" v-for="(slide, index) in slides"
                     :key="index">
                     <img :src="getImageUrl(slide.imgUrl)" :alt="slide.title">
                     <div class="left">
@@ -87,35 +87,17 @@ const slides = [
     },
     {
         imgUrl: 'venti-2.jpg',
-        title: '日月峡国家森林公园',
-        layerTitle: 'RiYue ',
-        subtitle: '02日月峡国家森林公园',
-        description: '日月峡国家森林公园位于小兴安岭南麓，呼兰河上游，黑龙江省铁力林业局马永顺（林业英雄）林场内；行政区域横跨伊春市铁力市和绥化市庆安县，占地面积29708公顷。',
-        rightTitle: ' Xia',
-        rightSubtitle: 'Forest Scenery',
-        route: '/celebration'
+        title: '敬请期待',
+        layerTitle: '敬请 ',
+        subtitle: '敬请期待',
+        description: '敬请期待',
+        rightTitle: ' 期待',
+        rightSubtitle: 'Stay tuned',
+        route: '/'
     },
-    {
-        imgUrl: '../图片库/桃山悬羊峰.webp',
-        title: '桃山悬羊峰',
-        layerTitle: 'XuanYa ',
-        subtitle: '03桃山悬羊峰',
-        description: '悬羊峰景区在桃山林业局东南37千米处，白河林场施业区内。悬羊峰始建于1984年，2009年被国土资源部批准为国家级地质公园。2011年被国家旅游局批准为AAAA级景区。',
-        rightTitle: ' ngFeng',
-        rightSubtitle: 'Cliff Scape',
-        route: '/tourism/xuanyang'
-    },
-    {
-        imgUrl: '../图片库/日月峡滑雪场.webp',
-        title: '日月峡滑雪场',
-        layerTitle: 'Hua ',
-        subtitle: '04日月峡滑雪场',
-        description: '日月峡滑雪场按照3S级标准建设，现已晋升为4S级，拥有三条高、中、初级和一条空中技巧雪道，总长度5000多米，还有滑雪圈、雪地摩托及雪地自行车场地。',
-        rightTitle: ' Xue',
-        rightSubtitle: 'Ski Resort',
-        route: '/tourism/skiresort'
-    }
 ];
+
+const isInitialLoad = ref(true);
 
 // 当前轮播索引
 const currentIndex = ref(0);
@@ -147,11 +129,17 @@ const handleNavMouseLeave = () => {
 
 // 切换到下一张
 const handleNext = () => {
+    if (isInitialLoad.value) {
+    isInitialLoad.value = false; // 首次切换后标记为非初始
+  }
     currentIndex.value = (currentIndex.value + 1) % slides.length;
 };
 
 // 切换到上一张
 const handlePrev = () => {
+    if (isInitialLoad.value) {
+    isInitialLoad.value = false; // 首次切换后标记为非初始
+  }
     currentIndex.value = (currentIndex.value - 1 + slides.length) % slides.length;
 };
 
@@ -163,6 +151,9 @@ const handleContainerClick = () => {
 // 挂载时添加鼠标监听
 onMounted(() => {
     window.addEventListener('mousemove', handleMouseMove);
+    setTimeout(() => {
+    isInitialLoad.value = false; // 延迟标记为非初始，确保首项渲染完成
+  }, 100);
 });
 
 // 卸载时移除监听

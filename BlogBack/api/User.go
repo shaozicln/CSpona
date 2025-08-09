@@ -17,7 +17,7 @@ import (
 type User struct {
 	Id           uint      `gorm:"primary key"`
 	Email        string    `gorm:"type:varchar(255)" column:"email"`
-	EmailStmp    string    `gorm:"type:varchar(255)" column:"email_stmp													"`
+	EmailSmtp    string    `gorm:"type:varchar(255)" column:"email_smtp													"`
 	Username     string    `gorm:"type:varchar(255)" column:"username"`
 	Password     string    `gorm:"type:varchar(255)" column:"password"`
 	ArticleCount int       `gorm:"type:int" column:"article_count"`
@@ -72,67 +72,76 @@ func PostUser(c *gin.Context) {
 	user.Password = ScryptPw(c.PostForm("password")) //密码加密储存
 	user.RoleQx = c.PostForm("role_qx")
 	user.Description = c.PostForm("description")
+	user.EmailSmtp, _ = utils.AESEncrypt(c.PostForm("EmailSmtp"))
 
 	db.Create(&user)
 	c.JSON(200, gin.H{"message": "created successfully", "data": user})
 }
+
 func PutUser(c *gin.Context) {
-    Id := c.Param("id")
+	Id := c.Param("id")
 
-    // 先从数据库获取原始用户信息
-    var user User
-    if err := db.First(&user, Id).Error; err != nil {
-        c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
-        return
-    }
+	// 先从数据库获取原始用户信息
+	var user User
+	if err := db.First(&user, Id).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
+		return
+	}
 
-    // 处理文件上传（头像）
-    file, err := c.FormFile("avatar")
-    if err == nil { // 如果有上传头像文件
-        baseDir := utils.GetImageBaseDir()
-        filename := filepath.Base(file.Filename)
-        savePath := filepath.Join(baseDir, filename)
-        savePath = strings.ReplaceAll(savePath, "\\", "/")
+	// 处理文件上传（头像）
+	file, err := c.FormFile("avatar")
+	if err == nil { // 如果有上传头像文件
+		baseDir := utils.GetImageBaseDir()
+		filename := filepath.Base(file.Filename)
+		savePath := filepath.Join(baseDir, filename)
+		savePath = strings.ReplaceAll(savePath, "\\", "/")
 
-        _ = os.MkdirAll(baseDir, os.ModePerm)
-        _ = c.SaveUploadedFile(file, savePath)
+		_ = os.MkdirAll(baseDir, os.ModePerm)
+		_ = c.SaveUploadedFile(file, savePath)
 
-        user.Avatar = filename // 更新头像文件名
-    }
+		user.Avatar = filename // 更新头像文件名
+	}
 
-    // 处理其他字段，若前端传递的参数为空则使用原始数据
-    username := c.PostForm("username")
-    if username != "" {
-        user.Username = username
-    }
+	// 处理其他字段，若前端传递的参数为空则使用原始数据
+	username := c.PostForm("username")
+	if username != "" {
+		user.Username = username
+	}
 
-    email := c.PostForm("email")
-    if email != "" {
-        user.Email = email
-    }
+	email := c.PostForm("email")
+	if email != "" {
+		user.Email = email
+	}
 
-    password := c.PostForm("password")
-    if password != "" {
-        user.Password = ScryptPw(password) // 密码加密储存
-    }
+	password := c.PostForm("password")
+	if password != "" {
+		user.Password = ScryptPw(password) // 密码加密储存
+	}
 
-    roleQx := c.PostForm("role_qx")
-    if roleQx != "" {
-        user.RoleQx = roleQx
-    }
+	roleQx := c.PostForm("role_qx")
+	if roleQx != "" {
+		user.RoleQx = roleQx
+	}
 
-    description := c.PostForm("description")
-    if description != "" {
-        user.Description = description
-    }
+	description := c.PostForm("description")
+	if description != "" {
+		user.Description = description
+	}
 
-    // 执行更新操作
-    if result := db.Save(&user); result.Error != nil {
-        c.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
-        return
-    }
+	emailSmtp := c.PostForm("email_smtp")
+	if emailSmtp != "" {
+		encryptedSmtp, _ := utils.AESEncrypt(emailSmtp)
 
-    c.JSON(http.StatusOK, gin.H{"data": user})
+		user.EmailSmtp = encryptedSmtp
+	}
+
+	// 执行更新操作
+	if result := db.Save(&user); result.Error != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"data": user})
 }
 func DeleteUser(c *gin.Context) {
 	var user User
