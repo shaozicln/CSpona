@@ -17,9 +17,11 @@ var (
 )
 
 func init() {
-	file, err := ini.Load("config/config.ini")
+	// 统一使用 BlogBack/config.ini（从 config.example.ini 复制）
+	file, err := ini.Load("config.ini")
 	if err != nil {
-		fmt.Println("配置文件读取错误，请检查文件路径：", err)
+		fmt.Println("配置文件读取错误：请复制 config.example.ini 为 config.ini 并填写后重试：", err)
+		return
 	}
 	LoadServer(file)
 	LoadData(file)
@@ -39,10 +41,10 @@ func LoadData(file *ini.File) {
 		fmt.Println("配置文件未加载成功")
 		return
 	}
-	Db = file.Section("database").Key("Db").MustString("debug")
+	Db = file.Section("database").Key("Db").MustString("mysql")
 	DbHost = file.Section("database").Key("DbHost").MustString("localhost")
 	DbPort = file.Section("database").Key("DbPort").MustString("3306")
-	DbUser = file.Section("database").Key("DbUser").MustString("svb")
-	DbPassWord = file.Section("database").Key("DbPassWord").MustString("svb2861")
+	DbUser = file.Section("database").Key("DbUser").MustString("root")
+	DbPassWord = file.Section("database").Key("DbPassWord").MustString("")
 	DbName = file.Section("database").Key("DbName").MustString("base")
 }

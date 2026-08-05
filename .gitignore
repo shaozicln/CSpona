@@ -1,0 +1,66 @@
+# ===== 本地文档 / 规划 =====
+Docs/
+
+# ===== 依赖与构建产物 =====
+**/node_modules/
+**/dist/
+**/dist-ssr/
+*.local
+
+# ===== 日志 =====
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# ===== 环境与密钥（勿提交） =====
+.env
+.env.*
+!.env.example
+**/config.ini
+**/config/config.ini
+*.pem
+*.key
+credentials.json
+
+# ===== IDE / 编辑器 =====
+.idea/
+.vscode/*
+!.vscode/extensions.json
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+*.iml
+
+# ===== 系统垃圾 =====
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ===== 弃用 / 压缩包 / 临时 =====
+Back/
+*.zip
+*.rar
+*.7z
+.tmp/
+.temp/
+.cph/
+
+# ===== 上传图片（运行时写入，勿进仓库） =====
+# 开发期静态图若需入库，用 git add -f 单独加白名单
+BlogFont/public/Pictures/*
+!BlogFont/public/Pictures/.gitkeep
+
+# ===== Go / Air =====
+**/tmp/
+**/vendor/
+*.exe
+*.test
+*.out
+
+# ===== 数据库大文件本地备份（按需保留 schema） =====
+BlogBack/database/*.sql.bak
+BlogBack/database/*_local.sql

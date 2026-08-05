@@ -86,7 +86,17 @@ const slides = [
         route: '/task-reminder'
     },
     {
-        imgUrl: 'venti-2.jpg',
+        imgUrl: '31.jpg',
+        title: 'OCraft',
+        layerTitle: 'OC ',
+        subtitle: 'OCraft',
+        description: 'OCraft，一个 OC Wiki 站。<br>通过这个平台，用户可以方便地创建和管理自己的 OC 角色信息。还可以生成3d小人。<br>使用Nuxt.js构建。网址：敬请期待喵',
+        rightTitle: ' raft',
+        rightSubtitle: 'OC Wiki',
+        route: '/'
+    },
+    {
+        imgUrl: 'Venti-2.jpg',
         title: '敬请期待',
         layerTitle: '敬请 ',
         subtitle: '敬请期待',
@@ -143,9 +153,17 @@ const handlePrev = () => {
     currentIndex.value = (currentIndex.value - 1 + slides.length) % slides.length;
 };
 
-// 点击容器（非按钮区域）跳转路由
+// 点击容器（非按钮区域）跳转路由,区分内部路由和外部链接
 const handleContainerClick = () => {
-    router.push(slides[currentIndex.value].route);
+  const currentRoute = slides[currentIndex.value].route;
+  // 判断是否为外部链接
+  if (currentRoute.startsWith('http://') || currentRoute.startsWith('https://')) {
+    // 外部链接用新窗口打开
+    window.open(currentRoute, '_blank');
+  } else {
+    // 内部路由用路由跳转
+    router.push(currentRoute);
+  }
 };
 
 // 挂载时添加鼠标监听

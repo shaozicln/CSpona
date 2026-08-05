@@ -1,5 +1,8 @@
-正在不断修补，恭迎大佬指正！
+# CSpona
 
-网址：https://cspona.top
+个人站点：[https://cspona.top](https://cspona.top)
 
-注：Back文件已弃用
+正在不断修补，恭迎指正。
+
+> `Back/` 已弃用，全部功能见 `BlogBack` + `BlogFont`。
+
