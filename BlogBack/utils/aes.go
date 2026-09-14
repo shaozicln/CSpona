@@ -6,8 +6,10 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"encoding/hex"
-	"github.com/go-ini/ini"
 	"log"
+	"strings"
+
+	"github.com/go-ini/ini"
 )
 
 var aesKey []byte
@@ -20,14 +22,18 @@ func init() {
 		log.Fatalf("无法加载 config.ini: %v", err)
 	}
 	// 读取 [security] 节下的 aes_secret_key
-	keyStr := cfg.Section("security").Key("aes_secret_key").String()
+	keyStr := strings.TrimSpace(cfg.Section("security").Key("aes_secret_key").String())
+	keyStr = strings.Trim(keyStr, `"'`)
 	if keyStr == "" {
 		log.Fatal("config.ini 中未配置 aes_secret_key")
 	}
 	// 必须是十六进制字符串（32/48/64 字符 → 16/24/32 字节）
 	aesKey, err = hex.DecodeString(keyStr)
 	if err != nil {
-		log.Fatalf("aes_secret_key 不是合法十六进制（可用 openssl rand -hex 16 生成）: %v", err)
+		log.Fatalf(
+			"aes_secret_key 不是合法十六进制（可用 openssl rand -hex 16 生成）: %v | 当前长度=%d 内容=%q",
+			err, len(keyStr), keyStr,
+		)
 	}
 	if len(aesKey) != 16 && len(aesKey) != 24 && len(aesKey) != 32 {
 		log.Fatalf("AES 密钥长度必须是 16/24/32 字节，当前长度: %d", len(aesKey))
