@@ -8,6 +8,8 @@
       </div>
     </div>
 
+    <MusicFields ref="musicFieldsRef" v-model:music-type="musicType" v-model:music-ref="musicRef" />
+
     <div class="bu">
       <div class="button-group">
         <button @click="showWrite = true" :class="{ active: showWrite }">
@@ -79,6 +81,7 @@ import { ref, computed, onMounted, nextTick } from "vue";
 import { marked } from "marked";
 import DOMPurify from "dompurify";
 import { getCurrentInstance } from "vue";
+import MusicFields from "@/components/common/MusicFields.vue";
 const instance = getCurrentInstance();
 const URL = instance?.appContext.config.globalProperties.URL;
 const URL2 = instance?.appContext.config.globalProperties.URL2;
@@ -95,6 +98,9 @@ const showImageDialog = ref(false);
 const imageUrl = ref("");
 const uploadedImage = ref(null);
 const file = ref(null);
+const musicType = ref("");
+const musicRef = ref("");
+const musicFieldsRef = ref(null);
 
 // Configure marked
 marked.setOptions({
@@ -225,6 +231,12 @@ const submitArticle = async () => {
   formData.append("content", content.value);
   formData.append("category_id", 1000);
   formData.append("user_id", userId);
+  const musicPayload = musicFieldsRef.value?.getPayload?.() || {
+    music_type: musicType.value,
+    music_ref: musicRef.value,
+  };
+  formData.append("music_type", musicPayload.music_type || "");
+  formData.append("music_ref", musicPayload.music_ref || "");
   if (file.value) {
     formData.append("img", file.value);
   }

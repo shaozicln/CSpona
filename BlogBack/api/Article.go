@@ -22,6 +22,8 @@ type Article struct {
 	CreatedAt    time.Time `gorm:"type:timestamp"`
 	UpdatedAt    time.Time `gorm:"type:timestamp"`
 	Img          string    `gorm:"type:varchar(255)"`
+	MusicType    string    `gorm:"type:varchar(16);column:music_type"` // 空|netease|playlist|file
+	MusicRef     string    `gorm:"type:varchar(512);column:music_ref"` // 歌曲/歌单ID或 music/xxx.mp3
 	User         User
 	Comments     []Comment
 	Category     Category
@@ -115,6 +117,13 @@ func PostArticle(c *gin.Context) {
 	userId, _ := strconv.Atoi(c.PostForm("user_id"))
 	article.UserId = uint(userId)
 
+	article.MusicType = strings.TrimSpace(c.PostForm("music_type"))
+	article.MusicRef = strings.TrimSpace(c.PostForm("music_ref"))
+	if article.MusicType != "netease" && article.MusicType != "playlist" && article.MusicType != "file" {
+		article.MusicType = ""
+		article.MusicRef = ""
+	}
+
 	db.Create(&article)
 	c.JSON(200, gin.H{"message": "created successfully", "data": article})
 }
@@ -169,6 +178,18 @@ func PutArticle(c *gin.Context) {
     if userId != "" {
         uid, _ := strconv.Atoi(userId)
         article.UserId = uint(uid)
+    }
+
+    // 配乐：表单带 music_type 则更新（可显式清空为默认歌单）
+    if _, ok := c.GetPostForm("music_type"); ok {
+        mt := strings.TrimSpace(c.PostForm("music_type"))
+        mr := strings.TrimSpace(c.PostForm("music_ref"))
+        if mt != "netease" && mt != "playlist" && mt != "file" {
+            mt = ""
+            mr = ""
+        }
+        article.MusicType = mt
+        article.MusicRef = mr
     }
 
     // 执行更新操作

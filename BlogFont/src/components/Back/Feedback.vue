@@ -13,7 +13,30 @@
               {{ type }}
             </option>
           </select>
+          <template v-if="adviceForm.type === '背景音乐の推荐'">
+            <input v-model="musicTitle" type="text" placeholder="歌名" />
+            <select v-model="musicKind">
+              <option value="netease">网易云链接</option>
+              <option value="file">上传音乐文件</option>
+            </select>
+            <input
+              v-if="musicKind === 'netease'"
+              v-model="musicRef"
+              type="text"
+              placeholder="网易云歌曲/歌单分享链接"
+            />
+            <div v-else class="file-input-group">
+              <label>音乐文件:</label>
+              <input type="file" accept="audio/*,.mp3,.m4a,.flac,.ogg,.wav,.aac" @change="musicFileChange" />
+              <span v-if="musicFileName" class="file-name">{{ musicFileName }}</span>
+            </div>
+            <textarea
+              v-model="adviceForm.content"
+              placeholder="想对作者说的话（可选）"
+            ></textarea>
+          </template>
           <textarea
+            v-else
             v-model="adviceForm.content"
             placeholder="给点具体建议?"
           ></textarea>
@@ -64,12 +87,17 @@ import Author from "../Author/Author.vue";
 const instance = getCurrentInstance();
 const URL = instance?.appContext.config.globalProperties.URL;
 
-const types = ref(["技术栈の文章", "对网站の建议"]);
+const types = ref(["技术栈の文章", "对网站の建议", "背景音乐の推荐"]);
 
 const adviceForm = ref({
   type: "",
   content: "",
 });
+const musicTitle = ref("");
+const musicKind = ref("netease");
+const musicRef = ref("");
+const musicFile = ref(null);
+const musicFileName = ref("");
 
 const websiteName = ref("");
 const websiteUrl = ref("");
@@ -81,6 +109,26 @@ const backgroundFileName = ref("");
 const coverFile = ref(null);
 const backgroundFile = ref(null);
 const MAX_FILE_SIZE = 1 * 1024 * 1024;
+const MAX_MUSIC_SIZE = 15 * 1024 * 1024;
+
+function musicFileChange(event) {
+  const files = event.target.files;
+  if (files && files.length > 0) {
+    const file = files[0];
+    if (file.size > MAX_MUSIC_SIZE) {
+      alert("音频不能超过 15MB");
+      event.target.value = "";
+      musicFile.value = null;
+      musicFileName.value = "";
+      return;
+    }
+    musicFile.value = file;
+    musicFileName.value = file.name;
+  } else {
+    musicFile.value = null;
+    musicFileName.value = "";
+  }
+}
 
 function formatFileSize(bytes) {
   if (bytes === 0) return "0 Bytes";
@@ -150,6 +198,56 @@ const avatar = localStorage.getItem("avatar");
 
 const createAdvice = async () => {
   try {
+    if (!adviceForm.value.type) {
+      alert("请选择类型");
+      return;
+    }
+
+    if (adviceForm.value.type === "背景音乐の推荐") {
+      if (!musicTitle.value.trim()) {
+        alert("请填写歌名");
+        return;
+      }
+      if (musicKind.value === "netease" && !musicRef.value.trim()) {
+        alert("请填写网易云链接");
+        return;
+      }
+      if (musicKind.value === "file" && !musicFile.value) {
+        alert("请上传音乐文件");
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append("username", usernameWeb || "");
+      formData.append("email", emailWeb || "");
+      formData.append("type", adviceForm.value.type);
+      formData.append("content", adviceForm.value.content || `推荐：${musicTitle.value}`);
+      formData.append("music_title", musicTitle.value.trim());
+      formData.append("music_kind", musicKind.value);
+      if (musicKind.value === "netease") {
+        formData.append("music_ref", musicRef.value.trim());
+      } else {
+        formData.append("music_file", musicFile.value);
+      }
+      const response = await fetch(`${URL}/advice`, {
+        method: "POST",
+        body: formData,
+      });
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        alert(err.error || "提交失败");
+        return;
+      }
+      alert("作者收到啦(^_^) 感谢推荐! ");
+      adviceForm.value = { type: "", content: "" };
+      musicTitle.value = "";
+      musicKind.value = "netease";
+      musicRef.value = "";
+      musicFile.value = null;
+      musicFileName.value = "";
+      return;
+    }
+
     const response = await fetch(`${URL}/advice`, {
       method: "POST",
       headers: {

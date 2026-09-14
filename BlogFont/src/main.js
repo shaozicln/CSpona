@@ -8,9 +8,12 @@ import "./styles/theme-sync.css";
 
 import piniaPluginPersistedstate from 'pinia-plugin-persistedstate'
 import { IMAGE_BASE } from "@/utils/image.js";
+import { ensureVisitorId } from "@/utils/visitor.js";
 
 const pinia = createPinia()
 pinia.use(piniaPluginPersistedstate)
+
+ensureVisitorId();
 
 const app = createApp(App).use(router).use(pinia).use(ElementPlus);
 

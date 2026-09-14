@@ -80,3 +80,26 @@ func GetAboutMePath() string {
 	}
 	return path
 }
+
+// GetMusicSettingsPath 站点默认背景音乐配置 JSON
+// 优先级：config.ini [music] Settings > 默认 content/music-default.json
+func GetMusicSettingsPath() string {
+	path := ""
+	if cfg, err := ini.Load("config.ini"); err == nil {
+		path = strings.TrimSpace(cfg.Section("music").Key("Settings").String())
+	}
+	if path == "" {
+		path = filepath.Join("content", "music-default.json")
+	}
+	if !filepath.IsAbs(path) {
+		if abs, err := filepath.Abs(path); err == nil {
+			path = abs
+		}
+	}
+	return path
+}
+
+// GetMusicDir 音频上传目录（Pictures/music）
+func GetMusicDir() string {
+	return filepath.Join(GetImageBaseDir(), "music")
+}

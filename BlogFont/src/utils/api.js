@@ -1,5 +1,6 @@
 import { getCurrentInstance } from "vue";
 import router from "@/router";
+import { visitorHeaders } from "@/utils/visitor.js";
 
 function getApiBase() {
   const instance = getCurrentInstance();
@@ -16,7 +17,10 @@ export async function apiFetch(path, options = {}) {
   const url = path.startsWith("http")
     ? path
     : `${base}${path.startsWith("/") ? path : `/${path}`}`;
-  const headers = { ...(options.headers || {}) };
+  const headers = {
+    ...visitorHeaders(),
+    ...(options.headers || {}),
+  };
   if (options.body && !(options.body instanceof FormData) && !headers["Content-Type"]) {
     headers["Content-Type"] = "application/json";
   }

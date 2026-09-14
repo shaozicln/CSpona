@@ -1,10 +1,11 @@
 package api
 
 import (
-	"github.com/gin-gonic/gin"
 	"net/http"
 	"strconv"
 	"time"
+
+	"github.com/gin-gonic/gin"
 )
 type Comment struct {
 	Id        uint      `gorm:"primary key; autoIncrement" column:"id"`
@@ -91,8 +92,7 @@ func GetContent(c *gin.Context) {
 		return
 	}
 	db.Where("id = ?", id).First(&article)
-	article.ViewCount++
-	db.Save(&article)
+	applyArticleView(c, &article)
 	var articleCount int64
 	db.Model(&Article{}).Where("user_id = ?", article.UserId).Count(&articleCount)
 	article.User.ArticleCount = int(articleCount)

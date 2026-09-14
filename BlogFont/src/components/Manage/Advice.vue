@@ -10,12 +10,17 @@
                 <button class="button" @click="sortByUsername">用户顺序</button>
             </div>
             <div class="advice-list">
-                <div v-for="(advice, index) in advices" :key="advice.id">
-                    <h1>{{ index + 1 }}</h1>
-                    <p>U：{{ advice.Username }}</p>
-                    <p>P：{{ advice.Type }}</p>
-                    <p>C：{{ advice.Content }}</p>
-                </div>
+                    <div v-for="(advice, index) in advices" :key="advice.id || advice.Id">
+                        <h1>{{ index + 1 }}</h1>
+                        <p>U：{{ advice.Username }}</p>
+                        <p>P：{{ advice.Type }}</p>
+                        <p>C：{{ advice.Content }}</p>
+                        <template v-if="advice.Type === '背景音乐の推荐'">
+                            <p>歌名：{{ advice.MusicTitle }}</p>
+                            <p v-if="advice.MusicKind === 'netease'">网易云：{{ advice.MusicRef }}</p>
+                            <p v-else-if="advice.MusicKind === 'file'">文件：{{ advice.MusicRef }}</p>
+                        </template>
+                    </div>
             </div>
         </div>
     </div>

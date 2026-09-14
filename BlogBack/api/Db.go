@@ -3,11 +3,12 @@ package api
 import (
 	"BlogBack/utils"
 	"fmt"
+	"os"
+
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 	"gorm.io/gorm/schema"
-	"os"
 )
 
 var db *gorm.DB
@@ -42,4 +43,7 @@ func InitDb() {
 		fmt.Println("数据库连接成功")
 	}
 
+	if migErr := db.AutoMigrate(&ArticleView{}); migErr != nil {
+		fmt.Println("article_views 迁移失败：", migErr)
+	}
 }

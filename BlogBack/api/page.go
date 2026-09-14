@@ -76,6 +76,8 @@ type pageArticleDetail struct {
 	Img          string    `json:"Img"`
 	ImgUrl       string    `json:"ImgUrl"`
 	CategoryName string    `json:"CategoryName"`
+	MusicType    string    `json:"MusicType"`
+	MusicRef     string    `json:"MusicRef"`
 }
 
 // PageHome 文章列表页聚合：分类 + 文章 + 已解析封面 URL
@@ -146,8 +148,8 @@ func PageArticle(c *gin.Context) {
 		return
 	}
 
-	article.ViewCount++
-	_ = db.Model(&article).Update("view_count", article.ViewCount).Error
+	// 浏览量：登录按 user，未登录按访客 ID，同一身份只计一次
+	applyArticleView(c, &article)
 
 	var articleCount int64
 	db.Model(&Article{}).Where("user_id = ?", article.UserId).Count(&articleCount)
@@ -187,6 +189,8 @@ func PageArticle(c *gin.Context) {
 				Img:          article.Img,
 				ImgUrl:       utils.ResolveImageURL(article.Img, ""),
 				CategoryName: category.Name,
+				MusicType:    article.MusicType,
+				MusicRef:     article.MusicRef,
 			},
 			"toc": toc,
 			"author": pageAuthor{

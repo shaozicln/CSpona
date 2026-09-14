@@ -53,6 +53,15 @@
                 >
                   {{ child.text }}
                 </a>
+                <a
+                  v-else-if="child.action === 'music'"
+                  href="#"
+                  class="dropdown-link"
+                  @click.prevent.stop="onOpenMusic(index)"
+                  @mouseenter.stop="keepDropdownOpen(index)"
+                >
+                  {{ child.text }}
+                </a>
                 <router-link 
                   v-else
                   :to="child.to" 
@@ -75,12 +84,14 @@ import { getCurrentInstance, ref, computed, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import { useUserStore } from '@/stores/user';
 import { useThemeStore } from '@/stores/theme';
+import { useMusicStore } from '@/stores/music';
 
 const instance = getCurrentInstance();
 const URL = instance?.appContext.config.globalProperties.URL;
 const route = useRoute();
 const userStore = useUserStore();
 const themeStore = useThemeStore();
+const musicStore = useMusicStore();
 
 const activeIndex = ref(0);
 
@@ -99,6 +110,7 @@ const accountChildren = computed(() => {
     { text: '登录/注册', to: '/login' },
     { text: '工具箱', to: '/tools' },
     { text: themeStore.switchLabel, to: '#theme', action: 'theme' },
+    { text: '音乐设置', to: '#music', action: 'music' },
   ];
   if (userStore.isLoggedIn || localStorage.getItem('userId')) {
     items.push({ text: '退出登录', to: '#logout', action: 'logout' });
@@ -167,6 +179,11 @@ const onLogout = async (parentIndex) => {
 
 const onToggleTheme = (parentIndex) => {
   themeStore.toggle();
+  navItems.value[parentIndex].isOpen = false;
+};
+
+const onOpenMusic = (parentIndex) => {
+  musicStore.openSettings();
   navItems.value[parentIndex].isOpen = false;
 };
 </script>

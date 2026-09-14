@@ -107,13 +107,16 @@ import { decodeArticleId } from "@/utils/utils.js";
 import { resolveImageUrl, headingIdFromCounter } from "@/utils/image.js";
 import ArticlePut from "./ArticlePut.vue";
 import { useArticleStore } from "@/stores/article";
+import { useMusicStore } from "@/stores/music";
 import PageLoading from "@/components/common/PageLoading.vue";
 import { useDelayedLoading } from "@/composables/useDelayedLoading.js";
+import { visitorHeaders } from "@/utils/visitor.js";
 
 const instance = getCurrentInstance();
 const URL = instance?.appContext.config.globalProperties.URL;
 const route = useRoute();
 const articleStore = useArticleStore();
+const musicStore = useMusicStore();
 
 const userQx = ref(localStorage.getItem("userQx") || "");
 const showEditModal = ref(false);
@@ -192,7 +195,12 @@ async function loadPageArticle(id) {
   loadError.value = "";
   startDetailLoading();
   try {
-    const response = await fetch(`${URL}/page/article/${id}`);
+    const response = await fetch(`${URL}/page/article/${id}`, {
+      credentials: "include",
+      headers: {
+        ...visitorHeaders(),
+      },
+    });
     const data = await response.json();
     if (seq !== loadSeq) return;
     if (!data.data) {
@@ -205,6 +213,12 @@ async function loadPageArticle(id) {
     }
     const payload = data.data;
     article.value = payload.article || {};
+    musicStore.setRouteContext({
+      detail: true,
+      musicType: article.value.MusicType || "",
+      musicRef: article.value.MusicRef || "",
+      articleId: article.value.ID || article.value.Id || article.value.id || "",
+    });
     toc.value = (payload.toc || []).map((t) => ({
       id: t.id || t.ID || t.Id,
       text: t.text || t.Text,

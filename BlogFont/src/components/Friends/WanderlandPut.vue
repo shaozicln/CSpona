@@ -23,6 +23,8 @@
       </div>
 
       <input v-model="title" type="text" placeholder="输入标题" />
+
+      <MusicFields ref="musicFieldsRef" v-model:music-type="musicType" v-model:music-ref="musicRef" />
       
       <div class="bu">
         <div class="button-group">
@@ -98,6 +100,7 @@ import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 library.add(faTrashAlt, faTimes);
 
 import { useRouter } from 'vue-router';
+import MusicFields from '@/components/common/MusicFields.vue';
 const router = useRouter();
 
 // 接收父组件传递的参数
@@ -161,6 +164,9 @@ const imageUrl = ref("");
 const uploadedImage = ref(null);
 const bgImageFile = ref(null); // 背景图文件对象
 const bgImageUrl = ref("");    // 背景图预览URL
+const musicType = ref("");
+const musicRef = ref("");
+const musicFieldsRef = ref(null);
 
 // 初始化帖子数据
 onMounted(() => {
@@ -170,6 +176,8 @@ onMounted(() => {
     title.value = props.articleData.Title;
     content.value = props.articleData.Content;
     selectedCategoryId.value = props.articleData.CategoryId;
+    musicType.value = props.articleData.MusicType || "";
+    musicRef.value = props.articleData.MusicRef || "";
     // 加载原有背景图
     if (props.articleData.Img) {
       bgImageUrl.value = `${URL2}/Pictures/${props.articleData.Img}`;
@@ -319,6 +327,12 @@ const submitUpdate = async () => {
   formData.append('content', content.value);
   formData.append('category_id', selectedCategoryId.value);
   formData.append('user_id', props.articleData.UserId);
+  const musicPayload = musicFieldsRef.value?.getPayload?.() || {
+    music_type: musicType.value,
+    music_ref: musicRef.value,
+  };
+  formData.append('music_type', musicPayload.music_type || '');
+  formData.append('music_ref', musicPayload.music_ref || '');
   
   // 如果有新背景图，添加到FormData
   if (bgImageFile.value) {

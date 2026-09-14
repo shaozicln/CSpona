@@ -1,5 +1,7 @@
 <script setup>
 import MyHead from './components/MyHead.vue'
+import SiteMusicPlayer from './components/common/SiteMusicPlayer.vue'
+import MusicSettingsModal from './components/common/MusicSettingsModal.vue'
 import { onMounted, ref } from 'vue'
 import { useUserStore } from '@/stores/user'
 import { useThemeStore } from '@/stores/theme'
@@ -41,6 +43,8 @@ onMounted(() => {
   <div id="app-root">
     <MyHead v-if="!$route.meta.hideMyHead"/>
     <router-view />
+    <SiteMusicPlayer />
+    <MusicSettingsModal />
   </div>
 </template>
 

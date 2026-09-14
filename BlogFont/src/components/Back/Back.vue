@@ -15,6 +15,7 @@
                 <button class="button" @click="article">文章管理</button>
                 <button class="button" @click="message">留言管理</button>
                 <button class="button" @click="openAboutMe">关于我</button>
+                <button class="button" @click="openMusic">默认音乐</button>
             </div>
         </div>
         <div class="modal" v-if="showModal" @click.self="hideModal">
@@ -25,11 +26,22 @@
                     <button class="button" @click="sortByUsername">用户顺序</button>
                 </div>
                 <div class="advice-list">
-                    <div v-for="(advice, index) in advices" :key="advice.id">
+                    <div v-for="(advice, index) in advices" :key="advice.id || advice.Id">
                         <h1>{{ index + 1 }}</h1>
                         <p>U：{{ advice.Username }}</p>
                         <p>T：{{ advice.Type }}</p>
                         <p>C：{{ advice.Content }}</p>
+                        <template v-if="advice.Type === '背景音乐の推荐'">
+                            <p>歌名：{{ advice.MusicTitle }}</p>
+                            <p v-if="advice.MusicKind === 'netease'">
+                                网易云：
+                                <a :href="advice.MusicRef" target="_blank" rel="noopener">{{ advice.MusicRef }}</a>
+                            </p>
+                            <p v-else-if="advice.MusicKind === 'file'">
+                                文件：
+                                <a :href="musicFileUrl(advice.MusicRef)" target="_blank" rel="noopener">试听</a>
+                            </p>
+                        </template>
                     </div>
                 </div>
             </div>
@@ -80,6 +92,41 @@
                 <div v-else class="about-preview" v-html="aboutPreviewHtml"></div>
             </div>
         </div>
+        <div class="modal" v-if="showMusicModal" @click.self="hideMusicModal">
+            <div class="about-modal music-modal">
+                <div class="about-modal-header">
+                    <h2>站点默认音乐</h2>
+                    <div class="about-actions">
+                        <button class="button" type="button" :disabled="musicSaving" @click="saveMusicSettings">
+                            {{ musicSaving ? '保存中…' : '保存' }}
+                        </button>
+                    </div>
+                </div>
+                <p class="about-hint">未单独配乐的文章/漫游，以及文章列表等页面，都会用这里的配置（访客可在「音乐设置」里换成自己的歌单）。</p>
+                <div class="music-admin">
+                    <label class="music-admin-row">
+                        <span>模式</span>
+                        <select v-model="musicForm.mode">
+                            <option value="netease">网易云歌单</option>
+                            <option value="song">网易云单曲</option>
+                            <option value="files">本地上传曲目</option>
+                        </select>
+                    </label>
+                    <label v-if="musicForm.mode === 'netease' || musicForm.mode === 'song'" class="music-admin-row">
+                        <span>{{ musicForm.mode === 'song' ? '歌曲 ID / 链接' : '歌单 ID / 链接' }}</span>
+                        <input v-model="musicForm.playlistId" type="text" :placeholder="musicForm.mode === 'song' ? 'song id' : 'playlist id'" />
+                    </label>
+                    <div v-else class="music-tracks">
+                        <div v-for="(t, i) in musicForm.tracks" :key="i" class="music-track-row">
+                            <input v-model="t.title" type="text" placeholder="歌名" />
+                            <span class="track-path">{{ t.url }}</span>
+                            <button type="button" class="button" @click="removeTrack(i)">删</button>
+                        </div>
+                        <input type="file" accept="audio/*,.mp3,.m4a,.flac,.ogg,.wav,.aac" @change="addTrackFile" />
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </template>
 
@@ -93,9 +140,10 @@ import AuthorBack from '../Author/AuthorBack.vue'
 import { ref, computed } from 'vue';
 import MarkdownEditor from '../Manage/MarkdownEditor.vue';
 import { nextTick } from 'vue';
-import { apiJson, promptLoginIfUnauthorized } from '@/utils/api';
+import { apiJson, apiFetch, promptLoginIfUnauthorized } from '@/utils/api';
 import { marked } from 'marked';
 import DOMPurify from 'dompurify';
+import { extractNeteaseId, resolveMusicUrl } from '@/utils/music.js';
 
 marked.setOptions({ gfm: true, breaks: true });
 
@@ -112,10 +160,17 @@ const showAboutModal = ref(false);
 const aboutContent = ref('');
 const aboutPreview = ref(false);
 const aboutSaving = ref(false);
+const showMusicModal = ref(false);
+const musicSaving = ref(false);
+const musicForm = ref({ mode: 'netease', playlistId: '', tracks: [] });
 
 const aboutPreviewHtml = computed(() => {
   return DOMPurify.sanitize(marked.parse(aboutContent.value || ''));
 });
+
+function musicFileUrl(refPath) {
+  return resolveMusicUrl(refPath);
+}
 
 const openAboutMe = async () => {
     showAboutModal.value = true;
@@ -135,6 +190,93 @@ const openAboutMe = async () => {
 
 const hideAboutModal = () => {
     showAboutModal.value = false;
+};
+
+const openMusic = async () => {
+    showMusicModal.value = true;
+    try {
+        const { res, data } = await apiJson('/music/settings');
+        if (!res.ok) {
+            alert(data?.message || '加载失败');
+            return;
+        }
+        const d = data?.data || {};
+        musicForm.value = {
+            mode: d.mode === 'files' ? 'files' : d.mode === 'song' ? 'song' : 'netease',
+            playlistId: d.playlistId || '',
+            tracks: Array.isArray(d.tracks) ? d.tracks.map((t) => ({ title: t.title || '', url: t.url || '' })) : [],
+        };
+    } catch (e) {
+        console.error(e);
+        alert('加载失败');
+    }
+};
+
+const hideMusicModal = () => {
+    showMusicModal.value = false;
+};
+
+const removeTrack = (i) => {
+    musicForm.value.tracks.splice(i, 1);
+};
+
+const addTrackFile = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    if (file.size > 15 << 20) {
+        alert('音频不能超过 15MB');
+        return;
+    }
+    const formData = new FormData();
+    formData.append('file', file);
+    try {
+        const res = await apiFetch('/music/upload', { method: 'POST', body: formData });
+        const data = await res.json().catch(() => ({}));
+        if (promptLoginIfUnauthorized(res, data)) return;
+        if (!res.ok) {
+            alert(data.error || '上传失败');
+            return;
+        }
+        musicForm.value.tracks.push({
+            title: file.name.replace(/\.[^.]+$/, ''),
+            url: data.path || '',
+        });
+    } catch (err) {
+        console.error(err);
+        alert('上传失败');
+    }
+};
+
+const saveMusicSettings = async () => {
+    musicSaving.value = true;
+    try {
+        const body = {
+            mode: musicForm.value.mode,
+            playlistId: extractNeteaseId(musicForm.value.playlistId) || musicForm.value.playlistId.trim(),
+            tracks: musicForm.value.tracks.filter((t) => t.url),
+        };
+        const { res, data } = await apiJson('/music/settings', {
+            method: 'PUT',
+            body: JSON.stringify(body),
+        });
+        if (promptLoginIfUnauthorized(res, data)) return;
+        if (!res.ok) {
+            alert(data?.message || '保存失败');
+            return;
+        }
+        alert('默认音乐已保存');
+        showMusicModal.value = false;
+        try {
+            const { useMusicStore } = await import('@/stores/music');
+            await useMusicStore().loadSiteSettings();
+        } catch (_) {}
+    } catch (error) {
+        console.error(error);
+        alert('保存失败');
+    } finally {
+        musicSaving.value = false;
+    }
 };
 
 const saveAboutMe = async () => {
@@ -521,5 +663,54 @@ h1 {
 
 .about-preview {
     font-family: "楷体", serif;
+}
+
+.music-modal {
+    height: auto;
+    max-height: min(80vh, 720px);
+}
+
+.music-admin {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    overflow: auto;
+}
+
+.music-admin-row {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font-size: 14px;
+}
+
+.music-admin-row input,
+.music-admin-row select {
+    padding: 8px 10px;
+    border-radius: 6px;
+    border: 1px solid var(--input-border, #ccc);
+    background: var(--input-bg, #fff);
+    color: var(--input-text, #222);
+}
+
+.music-track-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.music-track-row input {
+    flex: 1;
+    padding: 6px 8px;
+}
+
+.track-path {
+    font-size: 12px;
+    color: var(--text-muted, #888);
+    max-width: 160px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 </style>

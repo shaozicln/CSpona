@@ -115,6 +115,7 @@ import { marked } from "marked";
 import hljs from "highlight.js";
 import "highlight.js/styles/github.css";
 import { useArticleStore } from "@/stores/article";
+import { useMusicStore } from "@/stores/music";
 import { decodeArticleId } from "@/utils/utils.js";
 import { resolveImageUrl, headingIdFromCounter } from "@/utils/image.js";
 import { apiFetch } from "@/utils/api.js";
@@ -136,6 +137,7 @@ const userStore = useUserStore();
 const router = useRouter();
 const route = useRoute();
 const articleStore = useArticleStore();
+const musicStore = useMusicStore();
 const commentsRef = ref(null);
 
 // 响应式变量
@@ -213,6 +215,12 @@ const fetchArticleDetail = async (id) => {
     Title: data.Title ?? data.title ?? "未命名文章",
     ImgUrl: data.ImgUrl,
   };
+  musicStore.setRouteContext({
+    detail: true,
+    musicType: data.MusicType || "",
+    musicRef: data.MusicRef || "",
+    articleId: data.ID || data.Id || data.id || id || "",
+  });
   pageComments.value = payload.comments || [];
   if (payload.author) {
     users.value[payload.author.Id] = {

@@ -26,9 +26,9 @@ func InitRouter() *gin.Engine {
 		router.GET("/categories", api.GetCategory)
 		router.GET("/categories-with-articles", api.CategoryWithArticle)
 		router.GET("/page/home", api.PageHome)
-		router.GET("/page/article/:id", api.PageArticle)
+		router.GET("/page/article/:id", middleware.AuthOptional(), api.PageArticle)
 
-		router.GET("/path-to-article/:id", api.GetContent)
+		router.GET("/path-to-article/:id", middleware.AuthOptional(), api.GetContent)
 		router.GET("/comments/:articleId", api.GetComment)
 		router.GET("/commentsReplies/:commentId", api.GetCommentWithReplies)
 
@@ -39,6 +39,8 @@ func InitRouter() *gin.Engine {
 		router.GET("/advice", api.GetAdvice)
 		router.POST("/advice", api.PostAdvice) // 反馈对访客开放
 		router.GET("/about-me", api.GetAboutMe)
+		router.GET("/music/settings", api.GetMusicSettings)
+		router.GET("/music/meting", api.ProxyMeting)
 
 		// 会话探测：未登录也返回 200，避免访客浏览时控制台 401
 		router.GET("/auth/me", middleware.AuthOptional(), api.AuthMe)
@@ -54,6 +56,8 @@ func InitRouter() *gin.Engine {
 			auth.PUT("/articles/:id", api.PutArticle)
 			auth.DELETE("/articles/:id", api.DeleteArticle)
 			auth.POST("/upload-image", api.UploadImage)
+			auth.POST("/music/upload", api.UploadMusic)
+			auth.PUT("/music/settings", api.PutMusicSettings)
 
 			auth.POST("/categories", api.PostCatehgory)
 			auth.PUT("/categories/:id", api.PutCategory)
