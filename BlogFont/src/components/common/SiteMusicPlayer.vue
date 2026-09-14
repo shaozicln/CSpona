@@ -490,7 +490,7 @@ function onDrop(to) {
   height: 44px;
   border-radius: 50%;
   border: 1px solid var(--panel-border, #ddd);
-  background: var(--panel-bg, rgba(255, 255, 255, 0.92));
+  background: var(--float-panel-bg, var(--panel-bg, rgba(255, 255, 255, 0.92)));
   color: var(--text-primary, #222);
   cursor: pointer;
   font-size: 18px;
@@ -501,7 +501,7 @@ function onDrop(to) {
   max-width: 260px;
   padding: 10px 12px;
   border-radius: 12px;
-  background: var(--panel-bg, rgba(255, 255, 255, 0.94));
+  background: var(--float-panel-bg, var(--panel-bg, rgba(255, 255, 255, 0.94)));
   border: 1px solid var(--panel-border, #ddd);
   color: var(--text-primary, #222);
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.14);
@@ -543,7 +543,7 @@ function onDrop(to) {
 .sm-list-card {
   width: min(280px, calc(100vw - 32px));
   max-height: min(42vh, 360px);
-  background: var(--panel-bg, rgba(255, 255, 255, 0.96));
+  background: var(--float-panel-bg, var(--panel-bg, rgba(255, 255, 255, 0.96)));
   border: 1px solid var(--panel-border, #ddd);
   border-radius: 12px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.16);
@@ -600,7 +600,7 @@ function onDrop(to) {
   cursor: pointer;
 }
 .sm-list-item:hover {
-  background: var(--panel-bg-soft, rgba(0, 0, 0, 0.04));
+  background: var(--float-panel-bg-soft, var(--panel-bg-soft, rgba(0, 0, 0, 0.04)));
 }
 .sm-list-item.active {
   background: var(--toc-active-bg, rgba(55, 105, 170, 0.12));

@@ -129,7 +129,7 @@ function onVolume(e) {
 }
 .ms-modal {
   width: min(420px, 100%);
-  background: var(--panel-bg, #fff);
+  background: var(--float-panel-bg, var(--panel-bg, #fff));
   color: var(--text-primary, #111);
   border-radius: 12px;
   border: 1px solid var(--panel-border, #eee);

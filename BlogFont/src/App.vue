@@ -52,6 +52,9 @@ onMounted(() => {
 :root {
   --panel-bg: rgba(255, 255, 255, 0.8);
   --panel-bg-soft: rgba(240, 248, 255, 0.7);
+  /* 浮层（nav 下拉 / 音乐卡片与设置）：与白天同透明度 */
+  --float-panel-bg: rgba(255, 255, 255, 0.8);
+  --float-panel-bg-soft: rgba(240, 248, 255, 0.7);
   --panel-border: #ffffff;
   --text-primary: rgba(0, 0, 0, 0.88);
   --text-secondary: #666;
@@ -81,6 +84,9 @@ onMounted(() => {
 html[data-theme="dark"] {
   --panel-bg: rgba(0, 0, 0, 0.38);
   --panel-bg-soft: rgba(0, 0, 0, 0.26);
+  /* 与白天 0.8 / 0.7 对齐，浮层更实、更易读 */
+  --float-panel-bg: rgba(0, 0, 0, 0.8);
+  --float-panel-bg-soft: rgba(0, 0, 0, 0.7);
   --panel-border: rgba(255, 255, 255, 0.16);
   --text-primary: rgba(255, 255, 255, 0.92);
   --text-secondary: rgba(255, 255, 255, 0.62);

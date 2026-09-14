@@ -287,7 +287,7 @@ const onOpenMusic = (parentIndex) => {
   left: 50%;
   transform: translateX(-50%);
   min-width: 200px;
-  background-color: var(--panel-bg);
+  background-color: var(--float-panel-bg, var(--panel-bg));
   border: 1px solid var(--panel-border);
   border-radius: 6px;
   padding: 10px 0;
