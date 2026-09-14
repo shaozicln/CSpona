@@ -31,12 +31,13 @@
             </div>
           </div>
           <p class="sm-list-tip">{{ playModeTip }} · 点击切歌，拖动手柄排序</p>
-          <ul class="sm-list-ul">
+          <ul ref="listUlEl" class="sm-list-ul">
             <li
               v-for="(track, i) in playlist"
               :key="track.url + '-' + i"
               class="sm-list-item"
               :class="{ active: i === index, dragging: dragFrom === i }"
+              :ref="(el) => setItemRef(el, i)"
               @dragover.prevent="onDragOver(i)"
               @drop.prevent="onDrop(i)"
               @click="selectTrack(i)"
@@ -98,6 +99,8 @@ const index = ref(0);
 const playing = ref(false);
 const expanded = ref(true);
 const listOpen = ref(false);
+const listUlEl = ref(null);
+const itemEls = ref([]);
 const userUnlocked = ref(false);
 const lastPlaylistSig = ref("");
 const autoplayBlocked = ref(false);
@@ -135,7 +138,7 @@ const statusText = computed(() => {
   if (!prefs.value.enabled) return "已关闭";
   if (status.value === "loading") return "加载中…";
   if (trackUnavailable.value) return "当前曲暂不可播，已跳过…";
-  if (autoplayBlocked.value) return "浏览器拦截自动播放，请点播放";
+  if (autoplayBlocked.value) return "首次进入浏览器会拦截自动播放，请手动点播放";
   if (errorMsg.value && !playlist.value.length) return errorMsg.value;
   if (!playlist.value.length) return "暂无曲目";
   if (errorMsg.value) return errorMsg.value;
@@ -206,6 +209,32 @@ function scheduleNextPrefetch() {
     nextPrefetchUrl = nextUrl;
   }, 2500);
 }
+
+function setItemRef(el, i) {
+  if (!el) return;
+  itemEls.value[i] = el;
+}
+
+/** 打开列表时把当前曲滚到可视区中间 */
+function scrollActiveIntoCenter() {
+  const ul = listUlEl.value;
+  const item = itemEls.value[index.value];
+  if (!ul || !item) return;
+  const offset =
+    item.offsetTop - ul.clientHeight / 2 + item.offsetHeight / 2;
+  const max = Math.max(0, ul.scrollHeight - ul.clientHeight);
+  ul.scrollTop = Math.min(max, Math.max(0, offset));
+}
+
+watch(listOpen, async (open) => {
+  if (!open) return;
+  await nextTick();
+  // 等弹出动画与列表 ref 就绪后再滚到当前曲
+  requestAnimationFrame(() => {
+    scrollActiveIntoCenter();
+    setTimeout(scrollActiveIntoCenter, 220);
+  });
+});
 
 function unlockOnce() {
   userUnlocked.value = true;
