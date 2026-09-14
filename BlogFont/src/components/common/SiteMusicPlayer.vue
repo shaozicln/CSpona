@@ -10,6 +10,7 @@
       @play="onPlay"
       @pause="onPause"
       @canplay="onCanPlay"
+      @error="onAudioError"
     />
 
     <div class="sm-stack">
@@ -17,9 +18,19 @@
         <div v-if="listOpen" class="sm-list-card" role="dialog" aria-label="播放列表">
           <div class="sm-list-head">
             <h3>播放列表 · {{ playlist.length }}</h3>
-            <button type="button" class="sm-list-close" @click="listOpen = false">×</button>
+            <div class="sm-list-actions">
+              <button
+                type="button"
+                class="sm-mode-btn"
+                :title="playModeTitle"
+                @click="cyclePlayMode"
+              >
+                {{ playModeLabel }}
+              </button>
+              <button type="button" class="sm-list-close" @click="listOpen = false">×</button>
+            </div>
           </div>
-          <p class="sm-list-tip">点击切歌，拖动手柄排序</p>
+          <p class="sm-list-tip">{{ playModeTip }} · 点击切歌，拖动手柄排序</p>
           <ul class="sm-list-ul">
             <li
               v-for="(track, i) in playlist"
@@ -90,6 +101,7 @@ const listOpen = ref(false);
 const userUnlocked = ref(false);
 const lastPlaylistSig = ref("");
 const autoplayBlocked = ref(false);
+const trackUnavailable = ref(false);
 const dragFrom = ref(-1);
 const suppressPlaylistReset = ref(false);
 /** 仅预拉「下一首」元数据，避免整单抢带宽 */
@@ -97,11 +109,32 @@ let nextPrefetchEl = null;
 let nextPrefetchUrl = "";
 let nextPrefetchTimer = 0;
 let lastProgressSyncAt = 0;
+/** 连续跳过不可播（VIP/失效）曲目，防止死循环 */
+let skipFailCount = 0;
+let playGen = 0;
+let loadWatchTimer = 0;
 
 const current = computed(() => playlist.value[index.value] || null);
+const playMode = computed(() => prefs.value.playMode || "loop");
+const playModeLabel = computed(() => {
+  if (playMode.value === "one") return "单曲";
+  if (playMode.value === "shuffle") return "随机";
+  return "循环";
+});
+const playModeTitle = computed(() => {
+  if (playMode.value === "one") return "单曲循环（点击切换）";
+  if (playMode.value === "shuffle") return "随机播放（点击切换）";
+  return "列表循环（点击切换）";
+});
+const playModeTip = computed(() => {
+  if (playMode.value === "one") return "单曲循环";
+  if (playMode.value === "shuffle") return "随机播放";
+  return "列表循环";
+});
 const statusText = computed(() => {
   if (!prefs.value.enabled) return "已关闭";
   if (status.value === "loading") return "加载中…";
+  if (trackUnavailable.value) return "当前曲暂不可播，已跳过…";
   if (autoplayBlocked.value) return "浏览器拦截自动播放，请点播放";
   if (errorMsg.value && !playlist.value.length) return errorMsg.value;
   if (!playlist.value.length) return "暂无曲目";
@@ -114,7 +147,9 @@ onMounted(async () => {
   if (!isDetailPath(route.path)) {
     music.setRouteContext({ detail: false });
   }
+  // 任意交互解锁后，若开了自动播放则补播
   window.addEventListener("pointerdown", unlockOnce, { once: true, capture: true });
+  window.addEventListener("keydown", unlockOnce, { once: true, capture: true });
   await nextTick();
   if (prefs.value.autoplay) {
     tryAutoplay();
@@ -123,6 +158,8 @@ onMounted(async () => {
 
 onUnmounted(() => {
   window.removeEventListener("pointerdown", unlockOnce, { capture: true });
+  window.removeEventListener("keydown", unlockOnce, { capture: true });
+  if (loadWatchTimer) clearTimeout(loadWatchTimer);
   clearNextPrefetch();
   music.flushProgress();
 });
@@ -173,9 +210,91 @@ function scheduleNextPrefetch() {
 function unlockOnce() {
   userUnlocked.value = true;
   autoplayBlocked.value = false;
-  if (prefs.value.autoplay && playlist.value.length && shouldPlay.value) {
-    playCurrent();
+  const a = audioEl.value;
+  if (a) {
+    try {
+      a.muted = false;
+      a.volume = volume.value;
+    } catch {
+      /* ignore */
+    }
   }
+  if (prefs.value.autoplay && playlist.value.length && shouldPlay.value) {
+    if (!playing.value || a?.paused) {
+      playCurrent(undefined, { forceSound: true });
+    }
+  }
+}
+
+function isAutoplayPolicyError(err) {
+  const name = err?.name || "";
+  const msg = String(err?.message || "");
+  return (
+    name === "NotAllowedError" ||
+    /user didn't interact|autoplay|not allowed/i.test(msg)
+  );
+}
+
+function clearLoadWatch() {
+  if (loadWatchTimer) {
+    clearTimeout(loadWatchTimer);
+    loadWatchTimer = 0;
+  }
+}
+
+/** 开播后尽量取消静音（延迟多拍，提高首次进页有声成功率） */
+function forceUnmute(a) {
+  if (!a) return;
+  const apply = () => {
+    try {
+      a.muted = false;
+      a.defaultMuted = false;
+      a.removeAttribute("muted");
+      a.volume = volume.value;
+    } catch {
+      /* ignore */
+    }
+  };
+  apply();
+  setTimeout(apply, 0);
+  setTimeout(apply, 120);
+  setTimeout(apply, 400);
+}
+
+/** 不可播（VIP/失效/加载失败）→ 自动下一首 */
+async function skipUnplayable() {
+  const n = playlist.value.length;
+  if (n <= 0) return;
+  skipFailCount += 1;
+  trackUnavailable.value = true;
+  autoplayBlocked.value = false;
+  if (skipFailCount >= n) {
+    skipFailCount = 0;
+    playing.value = false;
+    trackUnavailable.value = false;
+    // 整圈都不可播
+    syncLiveProgress(true);
+    return;
+  }
+  index.value = (index.value + 1) % n;
+  // 跳过坏曲时不受单曲循环限制
+  await nextTick();
+  await playCurrent(0, {
+    fromSkip: true,
+    preferMutedAutoplay: prefs.value.autoplay && !userUnlocked.value,
+  });
+}
+
+function onAudioError() {
+  // 空 src 的 error 忽略
+  if (!current.value?.url) return;
+  skipUnplayable();
+}
+
+function onCanPlay() {
+  clearLoadWatch();
+  trackUnavailable.value = false;
+  if (playing.value) scheduleNextPrefetch();
 }
 
 watch(
@@ -213,15 +332,17 @@ function onTimeUpdate() {
 }
 function onPlay() {
   playing.value = true;
+  autoplayBlocked.value = false;
+  // 自动播放若以静音启动，这里立刻尝试开声
+  if (prefs.value.autoplay || userUnlocked.value) {
+    forceUnmute(audioEl.value);
+  }
   syncLiveProgress(true);
   scheduleNextPrefetch();
 }
 function onPause() {
   playing.value = false;
   syncLiveProgress(true);
-}
-function onCanPlay() {
-  if (playing.value) scheduleNextPrefetch();
 }
 
 async function applyResumeHint(hint) {
@@ -345,50 +466,121 @@ watch(
 async function tryAutoplay() {
   if (!prefs.value.autoplay && !userUnlocked.value) return;
   if (!playlist.value.length || !shouldPlay.value) return;
-  await playCurrent();
+  // 开了自动播放：优先静音开播再开声（浏览器对静音 autoplay 几乎总是放行）
+  await playCurrent(undefined, { preferMutedAutoplay: prefs.value.autoplay && !userUnlocked.value });
 }
 
-async function playCurrent(seekTo) {
+/**
+ * @param {number} [seekTo]
+ * @param {{ fromSkip?: boolean, forceSound?: boolean, preferMutedAutoplay?: boolean }} [opts]
+ */
+async function playCurrent(seekTo, opts = {}) {
   const a = audioEl.value;
   if (!a || !current.value?.url) return;
+  const gen = ++playGen;
   a.volume = volume.value;
   const wantSeek =
     typeof seekTo === "number" && Number.isFinite(seekTo) && seekTo >= 0;
-  try {
-    if (wantSeek) {
-      const apply = () => {
-        try {
-          a.currentTime = seekTo;
-        } catch {
-          /* ignore */
-        }
-      };
-      if (a.readyState >= 1) apply();
-      else a.addEventListener("loadedmetadata", apply, { once: true });
+  if (!opts.fromSkip) {
+    skipFailCount = 0;
+    trackUnavailable.value = false;
+  }
+
+  const startMuted =
+    !!opts.preferMutedAutoplay &&
+    !opts.forceSound &&
+    !userUnlocked.value &&
+    !!prefs.value.autoplay;
+
+  // 关键属性再 play：静音自动播放策略才稳定
+  if (startMuted) {
+    a.defaultMuted = true;
+    a.muted = true;
+    a.setAttribute("muted", "");
+  } else {
+    a.defaultMuted = false;
+    a.muted = false;
+    a.removeAttribute("muted");
+  }
+
+  clearLoadWatch();
+  // 仅在真正加载失败时跳过；已在播放中不要因缓冲慢误跳
+  loadWatchTimer = window.setTimeout(() => {
+    loadWatchTimer = 0;
+    if (gen !== playGen) return;
+    if (playing.value || !a.paused) return;
+    if (a.error || a.readyState === 0) skipUnplayable();
+  }, 12000);
+
+  const applySeek = () => {
+    try {
+      if (wantSeek) a.currentTime = seekTo;
+    } catch {
+      /* ignore */
     }
-    await a.play();
+  };
+
+  const markPlaying = () => {
+    if (gen !== playGen) return;
     playing.value = true;
-    userUnlocked.value = true;
     autoplayBlocked.value = false;
+    trackUnavailable.value = false;
+    skipFailCount = 0;
+    clearLoadWatch();
+    forceUnmute(a);
+    if (!a.muted) userUnlocked.value = true;
     syncLiveProgress(true);
     scheduleNextPrefetch();
-  } catch {
-    playing.value = false;
-    // 即使自动播放失败，也尽量落到续播位置
+  };
+
+  try {
     if (wantSeek) {
-      const apply = () => {
+      if (a.readyState >= 1) applySeek();
+      else a.addEventListener("loadedmetadata", applySeek, { once: true });
+    }
+    // 等一帧，确保 muted 属性已生效
+    await nextTick();
+    await a.play();
+    markPlaying();
+  } catch (err) {
+    if (gen !== playGen) return;
+
+    if (!isAutoplayPolicyError(err)) {
+      playing.value = false;
+      clearLoadWatch();
+      await skipUnplayable();
+      return;
+    }
+
+    // 有声被拦 → 强制静音再开，再开声
+    if (prefs.value.autoplay || opts.preferMutedAutoplay) {
+      try {
+        a.defaultMuted = true;
+        a.muted = true;
+        a.setAttribute("muted", "");
+        await nextTick();
+        await a.play();
+        markPlaying();
+        return;
+      } catch {
         try {
-          a.currentTime = seekTo;
+          a.muted = false;
+          a.removeAttribute("muted");
         } catch {
           /* ignore */
         }
-      };
-      if (a.readyState >= 1) apply();
-      else a.addEventListener("loadedmetadata", apply, { once: true });
+      }
+    }
+
+    playing.value = false;
+    if (wantSeek) {
+      if (a.readyState >= 1) applySeek();
+      else a.addEventListener("loadedmetadata", applySeek, { once: true });
     }
     if (prefs.value.autoplay) {
       autoplayBlocked.value = true;
     }
+    clearLoadWatch();
     syncLiveProgress(true);
   }
 }
@@ -399,29 +591,72 @@ function toggle() {
   if (playing.value) {
     a.pause();
   } else {
-    playCurrent();
+    autoplayBlocked.value = false;
+    userUnlocked.value = true;
+    playCurrent(undefined, { forceSound: true });
   }
+}
+
+function cyclePlayMode() {
+  const order = ["loop", "one", "shuffle"];
+  const cur = playMode.value;
+  const nextMode = order[(order.indexOf(cur) + 1) % order.length];
+  music.setPref({ playMode: nextMode });
+}
+
+/** 按播放模式取下一曲下标；dir: 1 下一首 / -1 上一首 */
+function pickAdjacentIndex(fromIndex, dir = 1) {
+  const n = playlist.value.length;
+  if (n <= 0) return 0;
+  if (n === 1) return 0;
+  const mode = playMode.value;
+  if (mode === "shuffle") {
+    let r = Math.floor(Math.random() * n);
+    let guard = 0;
+    while (r === fromIndex && guard++ < 12) {
+      r = Math.floor(Math.random() * n);
+    }
+    return r;
+  }
+  return (fromIndex + dir + n) % n;
 }
 
 function next() {
   if (!playlist.value.length) return;
-  index.value = (index.value + 1) % playlist.value.length;
+  skipFailCount = 0;
+  trackUnavailable.value = false;
+  index.value = pickAdjacentIndex(index.value, 1);
   playCurrent(0);
 }
 
 function prev() {
   if (!playlist.value.length) return;
-  index.value = (index.value - 1 + playlist.value.length) % playlist.value.length;
+  skipFailCount = 0;
+  trackUnavailable.value = false;
+  index.value = pickAdjacentIndex(index.value, -1);
   playCurrent(0);
 }
 
 function onEnded() {
-  if (playlist.value.length > 1) next();
-  else playCurrent(0);
+  skipFailCount = 0;
+  trackUnavailable.value = false;
+  if (playMode.value === "one") {
+    playCurrent(0);
+    return;
+  }
+  if (playlist.value.length > 1) {
+    index.value = pickAdjacentIndex(index.value, 1);
+    playCurrent(0);
+  } else {
+    playCurrent(0);
+  }
 }
 
 function selectTrack(i) {
   if (i < 0 || i >= playlist.value.length) return;
+  skipFailCount = 0;
+  trackUnavailable.value = false;
+  autoplayBlocked.value = false;
   const same = i === index.value;
   index.value = i;
   if (same && audioEl.value) {
@@ -566,10 +801,32 @@ function onDrop(to) {
   align-items: center;
   justify-content: space-between;
   padding: 10px 12px 4px;
+  gap: 8px;
 }
 .sm-list-head h3 {
   margin: 0;
   font-size: 14px;
+  min-width: 0;
+  flex: 1;
+}
+.sm-list-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.sm-mode-btn {
+  border: 1px solid var(--input-border, #ccc);
+  background: var(--input-bg, #fff);
+  color: var(--text-primary);
+  border-radius: 6px;
+  padding: 2px 8px;
+  font-size: 12px;
+  cursor: pointer;
+  line-height: 1.4;
+}
+.sm-mode-btn:hover {
+  background: var(--hover-bg, rgba(0, 0, 0, 0.06));
 }
 .sm-list-close {
   border: none;
@@ -578,6 +835,7 @@ function onDrop(to) {
   line-height: 1;
   cursor: pointer;
   color: var(--text-primary);
+  padding: 0 2px;
 }
 .sm-list-tip {
   margin: 0 12px 6px;

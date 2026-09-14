@@ -14,11 +14,14 @@ const PROGRESS_KEY = "cspona_music_progress";
 function readPrefs() {
   try {
     const raw = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
+    const playMode =
+      raw.playMode === "one" || raw.playMode === "shuffle" ? raw.playMode : "loop";
     return {
       enabled: raw.enabled !== false,
       defaultPages: raw.defaultPages !== false,
       detailPages: raw.detailPages !== false,
       autoplay: raw.autoplay === true,
+      playMode,
       volume:
         typeof raw.volume === "number"
           ? Math.min(1, Math.max(0, raw.volume))
@@ -33,6 +36,7 @@ function readPrefs() {
       defaultPages: true,
       detailPages: true,
       autoplay: false,
+      playMode: "loop",
       volume: 0.45,
       customEnabled: false,
       customMode: "playlist",
