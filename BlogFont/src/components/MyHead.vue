@@ -35,7 +35,26 @@
                 :key="i"
                 class="dropdown-item"
               >
+                <a
+                  v-if="child.action === 'logout'"
+                  href="#"
+                  class="dropdown-link"
+                  @click.prevent.stop="onLogout(index)"
+                  @mouseenter.stop="keepDropdownOpen(index)"
+                >
+                  {{ child.text }}
+                </a>
+                <a
+                  v-else-if="child.action === 'theme'"
+                  href="#"
+                  class="dropdown-link theme-switch-link"
+                  @click.prevent.stop="onToggleTheme(index)"
+                  @mouseenter.stop="keepDropdownOpen(index)"
+                >
+                  {{ child.text }}
+                </a>
                 <router-link 
+                  v-else
                   :to="child.to" 
                   @click.stop="handleChildClick(index)"
                    @mouseenter.stop="keepDropdownOpen(index)"
@@ -52,18 +71,19 @@
 </template>
 
 <script setup>
-import { getCurrentInstance, ref } from 'vue';
+import { getCurrentInstance, ref, computed, watch } from 'vue';
 import { useRoute } from 'vue-router';
+import { useUserStore } from '@/stores/user';
+import { useThemeStore } from '@/stores/theme';
 
-// 全局配置获取
 const instance = getCurrentInstance();
 const URL = instance?.appContext.config.globalProperties.URL;
 const route = useRoute();
+const userStore = useUserStore();
+const themeStore = useThemeStore();
 
-// 激活状态索引
 const activeIndex = ref(0);
 
-// 用户类型判断
 const username = localStorage.getItem("username");
 const email = localStorage.getItem("email");
 let userType = "";
@@ -73,17 +93,24 @@ if (username === "长柄木勺" && email === "changbingmushao@qq.com") {
   userType = "反馈";
 }
 
-// 导航项配置
+const accountChildren = computed(() => {
+  const items = [
+    { text: '个人中心', to: '/user' },
+    { text: '登录/注册', to: '/login' },
+    { text: '工具箱', to: '/tools' },
+    { text: themeStore.switchLabel, to: '#theme', action: 'theme' },
+  ];
+  if (userStore.isLoggedIn || localStorage.getItem('userId')) {
+    items.push({ text: '退出登录', to: '#logout', action: 'logout' });
+  }
+  return items;
+});
+
 const navItems = ref([
   { 
-    // to: '/log', 
     to: '/', 
     text: 'CSpona:)', 
-    children: [
-      { text: '个人中心', to: '/user' },
-      { text: '登录/注册', to: '/login' },
-      { text: '工具箱', to: '/tools' },
-    ],
+    children: accountChildren.value,
     isOpen: false 
   },
   { to: '/', text: '首页', children: [], isOpen: false },
@@ -106,30 +133,42 @@ const navItems = ref([
   { to: '/search', text: '搜索一下', children: [], isOpen: false }
 ]);
 
-// 切换下拉菜单展开/收起
+watch(accountChildren, (kids) => {
+  navItems.value[0].children = kids;
+}, { immediate: true });
+
 const toggleDropdown = (index) => {
   navItems.value[index].isOpen = !navItems.value[index].isOpen;
-  // 收起其他下拉菜单
   navItems.value.forEach((item, i) => {
     if (i !== index) item.isOpen = false;
   });
   activeIndex.value = index;
 };
 
-// 子项点击处理
 const handleChildClick = (parentIndex) => {
   activeIndex.value = parentIndex;
   navItems.value[parentIndex].isOpen = false;
 };
 
-// 关闭所有下拉菜单（全局离开时触发）
+const keepDropdownOpen = (index) => {
+  navItems.value[index].isOpen = true;
+};
+
 const closeAllDropdowns = () => {
   navItems.value.forEach(item => {
     item.isOpen = false;
   });
 };
 
+const onLogout = async (parentIndex) => {
+  navItems.value[parentIndex].isOpen = false;
+  await userStore.logout();
+};
 
+const onToggleTheme = (parentIndex) => {
+  themeStore.toggle();
+  navItems.value[parentIndex].isOpen = false;
+};
 </script>
 
 <style scoped>
@@ -141,7 +180,9 @@ const closeAllDropdowns = () => {
 }
 
 .nav-bar {
-  color: #000000;
+  position: relative;
+  z-index: 100;
+  color: var(--nav-text);
   padding: 1em 50px;
   text-align: center;
   transition: all 0.3s;
@@ -150,7 +191,7 @@ const closeAllDropdowns = () => {
 
 .nav-bar:hover {
     background-color: rgba(255, 255, 255, 0);
-    color: #000000;
+    color: var(--nav-text);
     padding: 1em;
     text-align: center;
 }
@@ -189,22 +230,23 @@ const closeAllDropdowns = () => {
 
 /* 主链接样式 */
 .main-link {
-  color: #000000;
+  color: var(--nav-text);
   text-decoration: none;
   transition: color 0.2s;
 }
 
 .main-link:hover {
-  color: #333;
+  color: var(--text-muted);
 }
 
 /* 箭头样式与旋转动画 */
 .arrow {
   display: inline-block;
-  transition: transform 0.3s ease; /* 平滑旋转动画 */
-  transform-origin: center; /* 关键：以自身中心为旋转点 */
+  transition: transform 0.3s ease;
+  transform-origin: center;
   font-size: 18px;
   cursor: pointer;
+  color: var(--nav-text);
 }
 
 /* 展开时顺时针旋转180度（原地旋转） */
@@ -227,9 +269,9 @@ const closeAllDropdowns = () => {
   top: 0;
   left: 50%;
   transform: translateX(-50%);
-  min-width: 200px; /* 加宽菜单，更容易点击 */
-  background-color: rgb(255, 255, 255, 0.9);
-  border: 1px solid rgb(255, 255, 255);
+  min-width: 200px;
+  background-color: var(--panel-bg);
+  border: 1px solid var(--panel-border);
   border-radius: 6px;
   padding: 10px 0;
   box-shadow: 0 4px 12px rgba(0,0,0,0.1);
@@ -239,54 +281,62 @@ const closeAllDropdowns = () => {
 
 /* 下拉子项：增加高度和内边距，扩大点击区域 */
 .dropdown-item {
-  padding: 10px 25px; /* 增加上下内边距，点击区域更大 */
+  padding: 10px 25px;
   text-align: left;
   transition: background-color 0.2s;
   display:flex;
-
   justify-content: center;
   align-items: center;
 }
 
 .dropdown-item:hover {
-  background-color: #f5f5f5;
+  background-color: var(--toc-active-bg);
 }
 
-.dropdown-item a {
-  color: #333;
+.dropdown-item a,
+.dropdown-item .dropdown-link {
+  color: var(--text-primary);
   text-decoration: none;
   font-size: 22px;
   font-weight: 400;
-  display: block; /* 整行可点击 */
+  display: block;
   width: 100%;
+  cursor: pointer;
+}
+
+.theme-switch-link {
+  color: var(--text-primary);
+}
+
+.theme-switch-link:hover {
+  color: var(--text-secondary);
 }
 
 /* 激活状态样式 */
 .nav-item.active .main-link {
-  color: #000;
+  color: var(--nav-text);
 }
 
 /* 悬停效果 */
 .nav-bar:hover {
-  background-color: rgba(255, 255, 255, 0);
+  background-color: transparent;
 }
-
 
 .nav-bar li {
     margin-right: 20px;
 }
 
 .nav-bar a {
-    color: #000000;
+    color: var(--nav-text);
     text-decoration: none;
 }
 
 .nav-bar a:hover {
-    color: #000000bb;
+    color: var(--text-muted);
 }
 
 .nav-bar:hover a {
-    color: #000000;
+    color: var(--nav-text);
 }
 
 .nav-bar li:last-child {

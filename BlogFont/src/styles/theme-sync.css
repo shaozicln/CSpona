@@ -1,0 +1,118 @@
+/* 全局主题同步：Element Plus / 通用输入 / 暗色代码高亮 */
+
+:root {
+  --input-bg: rgba(255, 255, 255, 0.92);
+  --input-text: #222;
+  --input-border: #ddd;
+  --input-placeholder: #999;
+  --hover-bg: rgba(0, 0, 0, 0.06);
+  --card-bg: rgba(255, 255, 255, 0.85);
+  --code-text: #24292f;
+}
+
+html[data-theme="dark"] {
+  --input-bg: rgba(0, 0, 0, 0.4);
+  --input-text: rgba(255, 255, 255, 0.92);
+  --input-border: rgba(255, 255, 255, 0.2);
+  --input-placeholder: rgba(255, 255, 255, 0.45);
+  --hover-bg: rgba(255, 255, 255, 0.1);
+  --card-bg: rgba(0, 0, 0, 0.34);
+  --code-text: #e6edf3;
+  --code-bg: rgba(0, 0, 0, 0.32);
+}
+
+/* Element Plus 输入框 */
+html[data-theme="dark"] .el-textarea__inner,
+html[data-theme="dark"] .el-input__inner,
+html[data-theme="dark"] .el-input__wrapper {
+  background-color: var(--input-bg) !important;
+  color: var(--input-text) !important;
+  box-shadow: 0 0 0 1px var(--input-border) inset !important;
+}
+
+html[data-theme="dark"] .el-textarea__inner::placeholder,
+html[data-theme="dark"] .el-input__inner::placeholder {
+  color: var(--input-placeholder) !important;
+}
+
+html[data-theme="dark"] .el-button--text,
+html[data-theme="dark"] .el-button.is-text {
+  color: var(--text-secondary) !important;
+}
+
+/* 暗色下代码块文字可读 */
+html[data-theme="dark"] .hljs,
+html[data-theme="dark"] .content-box pre,
+html[data-theme="dark"] .content-box code,
+html[data-theme="dark"] .article-content pre,
+html[data-theme="dark"] .article-content code {
+  color: var(--code-text) !important;
+  background: transparent;
+}
+
+html[data-theme="dark"] .hljs-keyword,
+html[data-theme="dark"] .hljs-selector-tag,
+html[data-theme="dark"] .hljs-title,
+html[data-theme="dark"] .hljs-section,
+html[data-theme="dark"] .hljs-doctag,
+html[data-theme="dark"] .hljs-name,
+html[data-theme="dark"] .hljs-strong {
+  color: #ff7b72 !important;
+}
+
+html[data-theme="dark"] .hljs-string,
+html[data-theme="dark"] .hljs-attr,
+html[data-theme="dark"] .hljs-symbol,
+html[data-theme="dark"] .hljs-bullet,
+html[data-theme="dark"] .hljs-addition {
+  color: #a5d6ff !important;
+}
+
+html[data-theme="dark"] .hljs-comment,
+html[data-theme="dark"] .hljs-quote {
+  color: #8b949e !important;
+}
+
+html[data-theme="dark"] .hljs-number,
+html[data-theme="dark"] .hljs-literal {
+  color: #79c0ff !important;
+}
+
+/* 评论「回复」夜色保持亮蓝 */
+html[data-theme="dark"] .reply-btn,
+html[data-theme="dark"] .reply-btn:hover {
+  color: rgb(120, 190, 255) !important;
+}
+
+/* 工具箱：Element Plus / 原生控件在暗色下可读 */
+html[data-theme="dark"] .page-container input,
+html[data-theme="dark"] .page-container textarea,
+html[data-theme="dark"] .page-container select {
+  background-color: var(--input-bg) !important;
+  color: var(--input-text) !important;
+  border-color: var(--input-border) !important;
+}
+
+html[data-theme="dark"] .page-container input::placeholder,
+html[data-theme="dark"] .page-container textarea::placeholder {
+  color: var(--input-placeholder) !important;
+}
+
+/* 站点主按钮统一走主题变量 */
+.button,
+button.button {
+  background-color: var(--btn-bg);
+  color: var(--btn-text);
+}
+
+.button:hover,
+button.button:hover {
+  background-color: var(--btn-bg-hover);
+}
+
+html[data-theme="dark"] select option {
+  background-color: #1a1a1a;
+  color: var(--input-text);
+}
+
+

@@ -247,7 +247,7 @@ onUnmounted(() => {
     position: absolute;
     width: 100%;
     height: 100vh;
-    background: rgba(255, 255, 255, .1);
+    background: var(--panel-bg-soft);
     display: flex;
     justify-content: flex-end;
     align-items: center;
@@ -281,13 +281,13 @@ onUnmounted(() => {
 #left-btn {
     display: inline-block;
     padding: 13px 28px;
-    background: #fff;
-    border: 2px solid #fff;
+    background: var(--card-bg);
+    border: 2px solid var(--panel-border);
     border-radius: 6px;
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
     text-decoration: none;
     font-weight: 600;
-    color: #444;
+    color: var(--text-primary);
     font-size: 16px;
     transition: all .3s linear;
     cursor: pointer;
@@ -296,6 +296,7 @@ onUnmounted(() => {
 #left-text #left-btn:hover {
     background: transparent;
     color: #fff;
+    border-color: #fff;
 }
 
 .slide .right {
@@ -355,13 +356,14 @@ onUnmounted(() => {
     align-items: center;
     width: 50px;
     height: 50px;
-    background: #fff;
-    border: 2px solid #fff;
+    background: var(--card-bg);
+    border: 2px solid var(--panel-border);
     border-radius: 6px;
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
     cursor: pointer;
     margin-left: 25px;
     transition: .3s;
+    color: var(--text-primary);
 }
 
 .navi span:nth-child(1) {
@@ -369,12 +371,12 @@ onUnmounted(() => {
 }
 
 .navi span:nth-child(1):hover {
-    background: #fff;
+    background: var(--card-bg);
 }
 
 .arrow-icon {
     font-size: 14px;
-    color: rgba(0, 0, 0, 0.6);
+    color: var(--text-primary);
 }
 
 /* 过渡动画核心样式 */

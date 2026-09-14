@@ -14,49 +14,26 @@
         <Author />
       </div>
       <div class="markdown-content">
-        <h1>关于我</h1>
-        <p>
-          你好，我是一个热爱编程的开发者。专注于Web开发，熟悉 Vue.js 和 Go
-          语言。喜欢探索新技术并将其应用于实际项目中。
-        </p>
-        <div class="profile-info">
-          <div class="profile-item">
-            <span>🔭 I'm 长柄木勺, a sophomore student</span>
-          </div>
-          <div class="profile-item">
-            <span
-              >🌱 I am learning computer technology related content and basic
-              algorithmic knowledge</span
-            >
-          </div>
-          <div class="profile-item">
-            <span>😄 Tech stack: Javascript Vue Go Gin Mysql</span>
-          </div>
-          <div class="profile-item">
-            <span
-              >💬 I've done: two front-end blogs, some web mini-games and fun
-              little features</span
-            >
-          </div>
-          <div class="profile-item">
-            <span
-              >🤔 Current mini-goal: algorithmic fundamentals and
-              general-purpose technical implementations</span
-            >
-          </div>
-          <div class="profile-item">
-            <span
-              >⚡ Hobbies: gaming, watching anime and travelling, love to see
-              different stories and landscapes</span
-            >
-          </div>
-          <div class="profile-item">
-            <span>📫 How to reach me: changbingmushao@qq.com </span>
-          </div>
+        <div v-if="aboutError" class="about-error">
+          <p>{{ aboutError }}</p>
+          <button type="button" class="about-retry" @click="loadAboutMe">重试</button>
         </div>
+        <div v-else-if="!aboutReady" class="about-skeleton" aria-busy="true" aria-live="polite">
+          <div class="sk sk-title"></div>
+          <div class="sk sk-line"></div>
+          <div class="sk sk-line"></div>
+          <div class="sk sk-line short"></div>
+          <div class="sk sk-gap"></div>
+          <div class="sk sk-line"></div>
+          <div class="sk sk-line short"></div>
+          <div class="sk sk-line"></div>
+          <div class="sk sk-line short"></div>
+          <div class="sk sk-line"></div>
+        </div>
+        <div v-else class="about-body" v-html="aboutHtml"></div>
       </div>
     </div>
-    <div class="contact-info"style="display: flex; align-items: center; gap: 4px;flex-direction:column;justify-content:center" >
+    <div class="contact-info" style="display: flex; align-items: center; gap: 4px;flex-direction:column;justify-content:center">
       <span>----------欢迎来到CSpona!----------</span>
       <span style="display: flex; align-items: center; gap: 4px"
         >备案号：<a
@@ -73,53 +50,52 @@
 </template>
 
 <script setup>
-// 获取全局URL属性
-import { getCurrentInstance } from "vue";
-const instance = getCurrentInstance();
-const URL = instance?.appContext.config.globalProperties.URL;
 import Author from "@/components/Author/Author.vue";
-
+import { apiJson } from "@/utils/api";
+import { marked } from "marked";
+import DOMPurify from "dompurify";
 import { ref, onMounted, onUnmounted, computed } from "vue";
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { faGithub } from "@fortawesome/free-brands-svg-icons";
-import {
-  faMicroscope,
-  faSeedling,
-  faSmile,
-  faComment,
-  faLightbulb,
-  faBolt,
-  faEnvelope,
-} from "@fortawesome/free-solid-svg-icons";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
-library.add(faGithub, faEnvelope);
+marked.setOptions({ gfm: true, breaks: true });
 
-// 注册 FontAwesomeIcon 组件
-import { defineComponent } from "vue";
-defineComponent({
-  components: {
-    FontAwesomeIcon,
-  },
+const aboutMd = ref("");
+const aboutReady = ref(false);
+const aboutError = ref("");
+
+const aboutHtml = computed(() => {
+  if (!aboutMd.value) return "<p>暂无内容</p>";
+  return DOMPurify.sanitize(marked.parse(aboutMd.value));
 });
+
+async function loadAboutMe() {
+  aboutError.value = "";
+  aboutReady.value = false;
+  try {
+    const { res, data } = await apiJson("/about-me");
+    if (!res.ok) {
+      aboutError.value = data?.message || "加载失败";
+      return;
+    }
+    aboutMd.value = data?.data?.content || "";
+  } catch (e) {
+    console.error(e);
+    aboutError.value = "加载失败";
+  } finally {
+    aboutReady.value = true;
+  }
+}
 
 const fullTexts = ref([
   "欢迎你的到来, 新朋友 ..",
   "感受Coding带来的创造的乐趣吧 !",
 ]);
 
-// 显示
 const displayText = ref("");
-// 索引
 const currentTextIndex = ref(0);
-// 进度
 const currentProgress = ref(0);
-// 速度-----每秒显示的字符数
 const speed = 4;
-// 定时器ID
 let intervalId;
 
-// 计算当前应该显示的文本
 const currentText = computed(() => {
   return fullTexts.value[currentTextIndex.value].substring(
     0,
@@ -128,31 +104,23 @@ const currentText = computed(() => {
 });
 
 onMounted(() => {
-  // 启动逐字显示
+  loadAboutMe();
   intervalId = setInterval(() => {
     if (
       currentProgress.value < fullTexts.value[currentTextIndex.value].length
     ) {
-      currentProgress.value += 1; // 增加显示的字符数
+      currentProgress.value += 1;
     } else {
-      // 当前语句显示完毕，准备显示下一条语句
       currentProgress.value = 0;
       currentTextIndex.value =
         (currentTextIndex.value + 1) % fullTexts.value.length;
     }
     displayText.value = currentText.value;
-  }, 1000 / speed); // 根据速度设置定时器的时间间隔
+  }, 1000 / speed);
 });
 
 onUnmounted(() => {
-  clearInterval(intervalId); // 清除定时器
-});
-
-import { onBeforeRouteLeave } from 'vue-router';
-onBeforeRouteLeave((to, from) => {
-  if (to.name === 'Articles') { // 仅当跳转到 Articles 路由时设置刷新标记
-    sessionStorage.setItem('refreshAfterEnter', 'Articles');
-  }
+  clearInterval(intervalId);
 });
 </script>
 
@@ -179,7 +147,6 @@ onBeforeRouteLeave((to, from) => {
   font-size: 30px;
   font-family: Cormorant SC, serif;
   text-align: center;
-  /* 确保文本居中 */
 }
 
 #TypingTextContainer {
@@ -191,19 +158,15 @@ onBeforeRouteLeave((to, from) => {
   width: 100vw;
   font-size: 30px;
   font-family: cursive;
-  /* 保持字体一致 */
   position: relative;
-  /* 确保子元素的绝对定位相对于此容器 */
 }
 
 #TypingText {
   position: relative;
-  /* 为动画元素定位 */
 }
 
 .blink {
   animation: blink 0.75s infinite;
-  /* 调整闪烁速度 */
 }
 
 @keyframes blink {
@@ -224,99 +187,134 @@ onBeforeRouteLeave((to, from) => {
   margin: 25px;
 }
 
-/* 美化 markdownContent 的样式 */
 .markdown-content {
   margin: 25px;
   font-size: 18px;
   font-family: "楷体";
   line-height: 1.6;
-  color: #333;
+  color: var(--text-primary);
   padding: 20px 20px 40px 20px;
-  background-color: #fff;
+  background-color: var(--panel-bg);
   border-radius: 8px;
-  /*box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);*/
   max-width: 800px;
+  min-width: 280px;
 }
 
-.markdown-content h1,
-.markdown-content h2,
-.markdown-content h3,
-.markdown-content h4,
-.markdown-content h5,
-.markdown-content h6 {
+.about-error {
+  color: var(--text-secondary);
+  padding: 12px 0;
+  text-align: center;
+}
+
+.about-retry {
+  margin-top: 10px;
+  padding: 6px 14px;
+  border: none;
+  border-radius: 6px;
+  background: var(--btn-bg);
+  color: var(--btn-text);
+  cursor: pointer;
+}
+
+.about-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 280px;
+  padding: 4px 0;
+}
+
+.sk {
+  border-radius: 8px;
+  background: linear-gradient(
+    90deg,
+    var(--hover-bg) 25%,
+    rgba(255, 255, 255, 0.18) 50%,
+    var(--hover-bg) 75%
+  );
+  background-size: 200% 100%;
+  animation: home-shimmer 1.2s ease-in-out infinite;
+}
+
+.sk-title {
+  height: 32px;
+  width: 36%;
+  margin-bottom: 6px;
+}
+
+.sk-line {
+  height: 16px;
+  width: 100%;
+}
+
+.sk-line.short {
+  width: 72%;
+}
+
+.sk-gap {
+  height: 10px;
+  width: 40%;
+  opacity: 0;
+}
+
+@keyframes home-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.markdown-content :deep(h1),
+.markdown-content :deep(h2),
+.markdown-content :deep(h3),
+.markdown-content :deep(h4),
+.markdown-content :deep(h5),
+.markdown-content :deep(h6) {
   margin-top: 20px;
   margin-bottom: 10px;
-  /*color: #333;*/
 }
 
-.markdown-content p {
+.markdown-content :deep(h1:first-child) {
+  margin-top: 0;
+}
+
+.markdown-content :deep(p) {
   margin-bottom: 15px;
 }
 
-.profile-info {
+.markdown-content :deep(ul),
+.markdown-content :deep(ol) {
   display: flex;
   flex-direction: column;
   gap: 10px;
   margin-top: 20px;
+  padding-left: 1.2em;
+  list-style-position: outside;
 }
 
-.profile-item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
+.markdown-content :deep(li) {
   font-size: 16px;
-  /*color: #555;*/
 }
 
-.profile-item i {
-  /*color: #007BFF;*/
-  font-size: 20px;
-}
-
-.github-stats {
-  margin-top: 20px;
-  text-align: center;
-}
-
-.github-stats img {
-  border-radius: 8px;
-  /*box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);*/
+.markdown-content :deep(a) {
+  color: var(--text-primary);
+  text-decoration: underline;
 }
 
 .contact-info {
   width: 100vw;
-  /* display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center; */
   margin-top: 100px;
   margin-bottom: 0px;
   font-size: 20px;
-  color: #494949;
-  /* 灰色字 */
+  color: var(--text-secondary);
   text-align: center;
-  background-color: rgba(255, 255, 255, 0.7);
-  /* 灰色背景 */
+  background-color: var(--panel-bg);
   padding: 40px;
-  /* border-radius: 16px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); */
 }
 
 .contact-info span {
   margin: 5px 0;
 }
-
-/* .contact-info a {
-    color: #00000053;
-    text-decoration: none;
-}
-
-.contact-info a:hover {
-    text-decoration: underline;
-}
-
-.contact-info i {
-    margin-right: 5px;
-    color: #ad0e0e;
-} */
 </style>

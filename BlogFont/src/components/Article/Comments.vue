@@ -14,7 +14,7 @@
         <div v-for="comment in comments" :key="comment.Id" class="comment-item">
           <!-- 主评论 -->
           <div class="comment-main">
-            <img :src="getImageUrl(comment.User.Avatar || 'boli.jpg')" class="avatar" />
+            <img :src="getImageUrl(comment.User.Avatar || 'boli.jpg', comment.User.AvatarUrl)" class="avatar" />
             <div class="comment-content">
               <!-- 主评论内容 -->
               <div class="comment-header">
@@ -67,12 +67,12 @@
           <!-- 回复列表 -->
           <div v-if="comment.Replies && comment.Replies.length > 0" class="reply-list">
             <div v-for="(reply, index) in sortedReplies(comment)" :key="reply.Id" class="reply-item">
-              <img :src="getImageUrl(reply.User.Avatar || 'boli.jpg')" class="avatar" />
+              <img :src="getImageUrl(reply.User.Avatar || 'boli.jpg', reply.User.AvatarUrl)" class="avatar" />
               <div class="comment-content">
                 <div class="comment-header">
                   <span class="username">
                     {{ reply.User.Username }}
-                    <span v-if="reply.ReplyId > 0" class="reply-target">
+                    <span v-if="Number(reply.ReplyId) > 0" class="reply-target">
                       回复 @{{ getReplyUsername(reply.ReplyId) || '已删除用户' }}
                     </span>
                   </span>
@@ -140,11 +140,12 @@
 import { ref, onMounted, onUnmounted, computed, shallowRef, watch } from "vue";
 import { ElInput, ElButton } from "element-plus";
 import { getCurrentInstance } from "vue";
+import { resolveImageUrl } from "@/utils/image.js";
+import { apiFetch, apiJson, promptLoginIfUnauthorized } from "@/utils/api.js";
 const instance = getCurrentInstance();
 const URL = instance?.appContext.config.globalProperties.URL;
-const { proxy } = getCurrentInstance();
-const getImageUrl = (imgName) => {
-  return `${proxy.$imageBaseUrl}${imgName}`;
+const getImageUrl = (imgName, resolved) => {
+  return resolveImageUrl(resolved || imgName, "boli.jpg");
 };
 
 import { useArticleStore } from '@/stores/article';
@@ -165,6 +166,26 @@ const usernameCache = shallowRef({});
 const menuStates = ref({}); // 菜单状态
 const activeReplies = ref({ parent: null, child: null }); // 回复框状态
 
+const props = defineProps({
+  articleId: { type: [String, Number], required: true },
+  initialComments: { type: Array, default: () => [] },
+});
+
+function applyComments(list) {
+  const normalize = (c) => ({
+    ...c,
+    User: c?.User || { Id: 0, Username: "已删除用户", Avatar: "boli.jpg", AvatarUrl: "" },
+    Replies: Array.isArray(c?.Replies) ? c.Replies.map(normalize) : [],
+  });
+  comments.value = (list || []).map(normalize).sort((a, b) => {
+    if (a.IsPinned === 1 && b.IsPinned !== 1) return -1;
+    if (a.IsPinned !== 1 && b.IsPinned === 1) return 1;
+    if (a.IsPinned === 1 && b.IsPinned === 1) {
+      return new Date(b.PinnedAt) - new Date(a.PinnedAt);
+    }
+    return new Date(b.CreatedAt) - new Date(a.CreatedAt);
+  });
+}
 // 权限检查
 const hasCommentActions = computed(() => (comment) => {
   return isAdmin || comment.User.Id == currentUserId;
@@ -214,7 +235,9 @@ const pinComment = async (commentId, isParent, parentCommentId = null) => {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ is_pinned: newStatus }),
+      credentials: "include",
     });
+    if (promptLoginIfUnauthorized(response, await response.clone().json().catch(() => null))) return;
     if (response.ok) {
       target.IsPinned = newStatus;
       if (isParent) {
@@ -231,27 +254,17 @@ const pinComment = async (commentId, isParent, parentCommentId = null) => {
   }
 };
 
-// 获取评论
+const currentArticleId = computed(() => props.articleId || articleId.value);
+
+// 获取评论（发评/改评后刷新；首屏优先用 BFF initialComments）
 const fetchComments = async () => {
-  if (!articleId.value) return; // 文章ID为空时不请求
+  const id = currentArticleId.value;
+  if (!id) return;
   try {
-    const response = await fetch(`${URL}/comments/${articleId.value}`);
+    const response = await fetch(`${URL}/comments/${id}`);
     if (!response.ok) throw new Error("获取评论失败");
     const data = await response.json();
-    comments.value = (data.data || []).sort((a, b) => {
-      // 置顶评论优先
-      if (a.IsPinned === 1 && b.IsPinned !== 1) return -1;
-      if (a.IsPinned !== 1 && b.IsPinned === 1) return 1;
-
-      // 同为置顶评论，按 PinnedAt 降序（后置顶在前）
-      if (a.IsPinned === 1 && b.IsPinned === 1) {
-        return new Date(b.PinnedAt) - new Date(a.PinnedAt);
-      }
-      // 同为非置顶评论，按创建时间降序
-      return new Date(b.CreatedAt) - new Date(a.CreatedAt);
-
-
-    });
+    applyComments(data.data || []);
   } catch (error) {
     console.error("获取评论失败:", error);
   }
@@ -274,7 +287,7 @@ const toggleEdit = (commentId, isChild = false, parentCommentId = null) => {
       // 修复parentCommentId可能为字符串的问题
       const numericParentId = Number(parentCommentId);
       const parentComment = comments.value.find(c => c.Id === numericParentId);
-      targetComment = parentComment?.Replies.find(r => r.Id === numericCommentId);
+      targetComment = parentComment?.Replies?.find(r => r.Id === numericCommentId);
     } else {
       targetComment = comments.value.find(c => c.Id === numericCommentId);
     }
@@ -348,13 +361,17 @@ const submitComment = async () => {
     alert("评论内容不能为空哦 (＞﹏＜)");
     return;
   }
+  if (!currentUserId) {
+    promptLoginIfUnauthorized({ status: 401 }, { msg: "请先登录后再发表评论" });
+    return;
+  }
   try {
-    const response = await fetch(`${URL}/path-to-article/${articleId.value}`, {
+    const { res, data } = await apiJson(`/path-to-article/${currentArticleId.value}`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ userId: parseInt(currentUserId), idea: newComment.value }),
     });
-    if (!response.ok) throw new Error((await response.json()).error || `HTTP error! status: ${response.status}`);
+    if (promptLoginIfUnauthorized(res, data)) return;
+    if (!res.ok) throw new Error(data?.error || data?.msg || `HTTP ${res.status}`);
     alert("评论发布成功 (^_^) 快去看看吧 !");
     newComment.value = "";
     resetUsernameCache();
@@ -369,13 +386,17 @@ const submitComment = async () => {
 const submitReply = async (parentId) => {
   const content = replyContents.value[parentId];
   if (!content || !content.trim()) return;
+  if (!currentUserId) {
+    promptLoginIfUnauthorized({ status: 401 }, { msg: "请先登录后再回复" });
+    return;
+  }
   try {
-    const response = await fetch(`${URL}/path-to-article/${articleId.value}`, {
+    const { res, data } = await apiJson(`/path-to-article/${currentArticleId.value}`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ userId: parseInt(currentUserId), idea: content, parentId: parentId }),
     });
-    if (!response.ok) throw new Error((await response.json()).error || `HTTP error! status: ${response.status}`);
+    if (promptLoginIfUnauthorized(res, data)) return;
+    if (!res.ok) throw new Error(data?.error || data?.msg || `HTTP ${res.status}`);
     replyContents.value[parentId] = "";
     activeReplies.value.parent = null;
     activeReplies.value.child = null;
@@ -391,10 +412,11 @@ const submitReply = async (parentId) => {
 const deleteComment = async (commentId) => {
   if (!confirm("确定要删除这条评论吗？")) return;
   try {
-    const response = await fetch(`${URL}/path-to-article/${commentId}`, {
+    const { res, data } = await apiJson(`/path-to-article/${commentId}`, {
       method: "DELETE",
     });
-    if (!response.ok) throw new Error((await response.json()).error || `HTTP error! status: ${response.status}`);
+    if (promptLoginIfUnauthorized(res, data)) return;
+    if (!res.ok) throw new Error(data?.error || data?.msg || `HTTP ${res.status}`);
     fetchComments();
   } catch (error) {
     console.error("删除评论时出错:", error);
@@ -460,64 +482,37 @@ const resetUsernameCache = () => {
   usernameCache.value = {};
 };
 
-const props = defineProps({
-  articleId: { type: [String, Number], required: true }
-});
-
-
 const isLoading = ref(false);
 
-// 加载评论的核心方法
-const loadComments = async () => {
-  if (!props.articleId) return;
-  isLoading.value = true;
-  try {
-    const response = await fetch(`${URL}/comments/${props.articleId}`); // 评论接口
-    const data = await response.json();
-    comments.value = data.data;
-  } catch (err) {
-    console.error("加载评论失败:", err);
-  } finally {
-    isLoading.value = false;
-  }
-};
-
-
-// 生命周期钩子
 onMounted(() => {
   document.addEventListener("click", closeMenu);
-  fetchComments(); // 初始加载
-  loadComments();
 });
 
 watch(
-  () => props.articleId, // 直接监听 props 变化
-  (newId) => {
-    if (newId) {
+  () => props.articleId,
+  (newId, oldId) => {
+    if (!newId) return;
+    articleId.value = newId;
+    if (newId !== oldId) {
       resetCommentState();
-      fetchComments();
     }
   },
   { immediate: true }
 );
 
+watch(
+  () => props.initialComments,
+  (list) => {
+    if (Array.isArray(list)) {
+      applyComments(list);
+    }
+  },
+  { immediate: true, deep: true }
+);
 
 onUnmounted(() => {
   document.removeEventListener("click", closeMenu);
 });
-
-// 监听Pinia中的articleId变化（替代原来的localStorage监听）
-// watch(
-//   () => articleStore.articleId,
-//   (newId) => {
-//     if (newId) {
-//       articleId.value = newId; // 同步到本地ref
-//       resetCommentState();
-//       fetchComments(); // 触发评论刷新
-//     }
-//   },
-//   { immediate: true } // 初始加载时立即执行
-// );
 
 defineExpose({
   fetchComments
@@ -534,8 +529,9 @@ defineExpose({
 .comment-section {
   margin-top: 30px;
   padding: 20px;
-  background-color: rgba(255, 255, 255, 0.8);
+  background-color: var(--panel-bg);
   border-radius: 8px;
+  color: var(--text-primary);
 }
 
 .comment-input {
@@ -547,6 +543,17 @@ defineExpose({
 
 .comment-textarea {
   flex: 1;
+}
+
+.comment-textarea :deep(.el-textarea__inner) {
+  background-color: var(--input-bg) !important;
+  color: var(--input-text) !important;
+  border-color: var(--input-border) !important;
+  box-shadow: 0 0 0 1px var(--input-border) inset !important;
+}
+
+.comment-textarea :deep(.el-textarea__inner::placeholder) {
+  color: var(--input-placeholder, #999) !important;
 }
 
 .comment-submit-btn {
@@ -580,7 +587,7 @@ defineExpose({
   margin-left: 40px;
   margin-top: 15px;
   padding-left: 15px;
-  border-left: 2px solid #eee;
+  border-left: 2px solid var(--panel-border);
 }
 
 .avatar {
@@ -606,7 +613,7 @@ defineExpose({
 }
 
 .time {
-  color: #999;
+  color: var(--text-muted);
   font-size: 0.9em;
 }
 
@@ -628,7 +635,13 @@ defineExpose({
 }
 
 .reply-btn:hover {
+  color: rgb(20, 87, 111);
   text-decoration: underline;
+}
+
+html[data-theme="dark"] .reply-btn,
+html[data-theme="dark"] .reply-btn:hover {
+  color: rgb(120, 190, 255) !important;
 }
 
 .delete-btn {
@@ -661,9 +674,11 @@ defineExpose({
   width: 100%;
   height: 60px;
   padding: 8px;
-  border: 1px solid #ddd;
+  border: 1px solid var(--input-border);
   border-radius: 4px;
   resize: vertical;
+  background-color: var(--input-bg);
+  color: var(--input-text);
 }
 
 .reply-buttons {
@@ -689,11 +704,11 @@ defineExpose({
 }
 
 .reply-cancel-btn {
-  color: #666 !important;
+  color: var(--text-secondary) !important;
 }
 
 .reply-cancel-btn:hover {
-  color: #333 !important;
+  color: var(--text-primary) !important;
 }
 
 .show-more-replies {
@@ -717,8 +732,8 @@ defineExpose({
 .pinned-tag {
   display: inline-block;
   padding: 2px 6px;
-  background-color: #f0f0f0;
-  color: #666;
+  background-color: var(--hover-bg);
+  color: var(--text-secondary);
   border-radius: 4px;
   font-size: 0.8em;
   margin-left: 8px;
@@ -729,7 +744,7 @@ defineExpose({
   background: none;
   border: none;
   cursor: pointer;
-  color: #666;
+  color: var(--text-secondary);
   padding: 0 5px;
   font-size: 1.2em;
   line-height: 1;
@@ -744,8 +759,9 @@ defineExpose({
   position: absolute;
   right: 0;
   top: 100%;
-  background: white;
-  border: 1px solid #ddd;
+  background: var(--card-bg);
+  color: var(--text-primary);
+  border: 1px solid var(--panel-border);
   border-radius: 4px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   z-index: 10;
@@ -760,10 +776,11 @@ defineExpose({
   background: none;
   border: none;
   cursor: pointer;
+  color: var(--text-primary);
 }
 
 .action-menu button:hover {
-  background-color: #f5f5f5;
+  background-color: var(--hover-bg);
   color: rgb(139, 189, 234);
 }
 
@@ -774,7 +791,7 @@ defineExpose({
 }
 
 .reply-target {
-  color: #666;
+  color: var(--text-secondary);
   font-size: 0.9em;
   margin-left: 4px;
 }

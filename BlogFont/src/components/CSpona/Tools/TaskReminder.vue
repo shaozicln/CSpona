@@ -739,17 +739,18 @@ defineExpose({
 }
 
 .page-container {
-    background-color: #f3f4f6;
+    background-color: var(--panel-bg-soft);
     min-height: 100vh;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica,
         Arial, sans-serif;
-    color: #1f2937;
+    color: var(--text-primary);
     padding-bottom: 60px;
 }
 
 /* 头部样式 */
 .header {
-    background-color: #ffffff;
+    background-color: var(--card-bg);
+    border-bottom: 1px solid var(--panel-border);
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     position: fixed;
     top: 0;
@@ -757,6 +758,7 @@ defineExpose({
     right: 0;
     z-index: 50;
     transition: all 0.3s ease;
+    color: var(--text-primary);
 }
 
 .header-container {
@@ -802,11 +804,11 @@ defineExpose({
     border: none;
     cursor: pointer;
     transition: all 0.3s ease;
-    color: #1f2937;
+    color: var(--text-primary);
 }
 
 .header-button:hover {
-    background-color: #e5e7eb;
+    background-color: var(--hover-bg);
 }
 
 .header-button-icon {
@@ -822,13 +824,13 @@ defineExpose({
     border: none;
     font-size: 20px;
     cursor: pointer;
-    color: #1f2937;
+    color: var(--text-primary);
 }
 
 /* 移动端菜单 */
 .mobile-menu {
-    background-color: #ffffff;
-    border-top: 1px solid #e5e7eb;
+    background-color: var(--card-bg);
+    border-top: 1px solid var(--panel-border);
 }
 
 .mobile-menu-container {
@@ -851,11 +853,11 @@ defineExpose({
     cursor: pointer;
     transition: all 0.3s ease;
     text-align: left;
-    color: #1f2937;
+    color: var(--text-primary);
 }
 
 .mobile-menu-button:hover {
-    background-color: #e5e7eb;
+    background-color: var(--hover-bg);
 }
 
 .mobile-menu-button-icon {
@@ -875,12 +877,14 @@ defineExpose({
 
 /* 卡片样式 */
 .card {
-    background-color: #ffffff;
+    background-color: var(--card-bg);
+    border: 1px solid var(--panel-border);
     border-radius: 12px;
     padding: 24px;
     margin-bottom: 32px;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     transition: all 0.3s ease;
+    color: var(--text-primary);
 }
 
 .card:hover {
@@ -899,7 +903,7 @@ defineExpose({
     margin-bottom: 16px;
     display: flex;
     align-items: center;
-    color: #1f2937;
+    color: var(--text-primary);
 }
 
 .card-icon {
@@ -924,16 +928,18 @@ defineExpose({
 .form-label {
     font-size: 14px;
     font-weight: 500;
-    color: #6b7280;
+    color: var(--text-secondary);
 }
 
 .form-input {
     width: 100%;
     padding: 10px 12px;
-    border: 1px solid #e5e7eb;
+    border: 1px solid var(--input-border);
     border-radius: 8px;
     font-size: 16px;
     transition: all 0.3s ease;
+    background-color: var(--input-bg);
+    color: var(--input-text);
 }
 
 .form-input:focus {
@@ -986,7 +992,7 @@ defineExpose({
     font-weight: bold;
     display: flex;
     align-items: center;
-    color: #1f2937;
+    color: var(--text-primary);
 }
 
 .task-list-icon {
@@ -1036,7 +1042,7 @@ defineExpose({
 
 /* 任务项样式 */
 .task-item {
-    background-color: #ffffff;
+    background-color: var(--card-bg);
     border-radius: 8px;
     padding: 16px;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
@@ -1066,17 +1072,17 @@ defineExpose({
 .task-description {
     font-size: 16px;
     font-weight: 500;
-    color: #1f2937;
+    color: var(--text-primary);
 }
 
 .task-description.completed {
-    color: #6b7280;
+    color: var(--text-secondary);
     text-decoration: line-through;
 }
 
 .task-time {
     font-size: 14px;
-    color: #6b7280;
+    color: var(--text-secondary);
     margin-top: 4px;
     display: flex;
     align-items: center;
@@ -1089,8 +1095,8 @@ defineExpose({
 
 .expired-tag {
     font-size: 12px;
-    background-color: #e5e7eb;
-    color: #6b7280;
+    background-color: var(--hover-bg);
+    color: var(--text-secondary);
     padding: 2px 6px;
     border-radius: 4px;
     margin-left: 8px;
@@ -1099,7 +1105,7 @@ defineExpose({
 .delete-task-button {
     background: none;
     border: none;
-    color: #6b7280;
+    color: var(--text-secondary);
     cursor: pointer;
     transition: all 0.3s ease;
     padding: 4px;
@@ -1113,12 +1119,12 @@ defineExpose({
 
 /* 空任务样式 */
 .empty-task {
-    background-color: #ffffff;
+    background-color: var(--card-bg);
     border-radius: 8px;
     padding: 48px 20px;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     text-align: center;
-    color: #6b7280;
+    color: var(--text-secondary);
 }
 
 .empty-task-icon {
@@ -1133,8 +1139,9 @@ defineExpose({
 
 /* 页脚样式 */
 .footer {
-    background-color: #1f2937;
-    color: #ffffff;
+    background-color: var(--panel-bg);
+    color: var(--text-primary);
+    border-top: 1px solid var(--panel-border);
     padding: 24px 0;
     margin-top: auto;
 }
@@ -1167,7 +1174,7 @@ defineExpose({
 }
 
 .modal-content {
-    background-color: #ffffff;
+    background-color: var(--card-bg);
     border-radius: 12px;
     width: 100%;
     max-width: 500px;
@@ -1180,19 +1187,19 @@ defineExpose({
     justify-content: space-between;
     align-items: center;
     padding: 16px 20px;
-    border-bottom: 1px solid #e5e7eb;
+    border-bottom: 1px solid var(--panel-border);
 }
 
 .modal-title {
     font-size: 18px;
     font-weight: bold;
-    color: #1f2937;
+    color: var(--text-primary);
 }
 
 .modal-close-button {
     background: none;
     border: none;
-    color: #6b7280;
+    color: var(--text-secondary);
     cursor: pointer;
     transition: all 0.3s ease;
     padding: 4px;
@@ -1201,13 +1208,13 @@ defineExpose({
 }
 
 .modal-close-button:hover {
-    color: #1f2937;
-    background-color: #e5e7eb;
+    color: var(--text-primary);
+    background-color: var(--hover-bg);
 }
 
 .modal-body {
     padding: 20px;
-    color: #1f2937;
+    color: var(--text-primary);
 }
 
 .modal-body-text {
@@ -1249,22 +1256,24 @@ defineExpose({
 .modal-form-label {
     font-size: 14px;
     font-weight: 500;
-    color: #6b7280;
+    color: var(--text-secondary);
 }
 
 .modal-form-note {
     font-size: 12px;
-    color: #6b7280;
+    color: var(--text-secondary);
     margin-left: 4px;
 }
 
 .modal-form-input {
     width: 100%;
     padding: 10px 12px;
-    border: 1px solid #e5e7eb;
+    border: 1px solid var(--input-border);
     border-radius: 8px;
     font-size: 16px;
     transition: all 0.3s ease;
+    background-color: var(--input-bg);
+    color: var(--input-text);
 }
 
 .modal-form-input:focus {
@@ -1275,7 +1284,7 @@ defineExpose({
 
 .modal-form-help {
     font-size: 12px;
-    color: #6b7280;
+    color: var(--text-secondary);
     margin-top: 4px;
 }
 

@@ -128,12 +128,6 @@ const getArticleContent = (articleId) => {
   router.push(`/articleContent/${encodedId}`);
 };
 
-import { onBeforeRouteLeave } from 'vue-router';
-onBeforeRouteLeave((to, from) => {
-  if (to.name === 'Articles') { // 仅当跳转到 Articles 路由时设置刷新标记
-    sessionStorage.setItem('refreshAfterEnter', 'Articles');
-  }
-});
 </script>
 
 <style scoped>
@@ -161,7 +155,8 @@ onBeforeRouteLeave((to, from) => {
 }
 
 .search-form-container {
-    background-color: rgba(255, 255, 255, 0.5);
+    background-color: var(--panel-bg-soft);
+    color: var(--text-primary);
     /* white background with 0.5 opacity */
     padding: 50px 50px 40px 50px;
     border-radius: 10px;
@@ -170,7 +165,8 @@ onBeforeRouteLeave((to, from) => {
 }
 
 .search-form-container-focused {
-    background-color: rgba(255, 255, 255, 0.8);
+    background-color: var(--panel-bg);
+    color: var(--text-primary);
     width: 450px;
     height: 600px;
     padding: 50px 50px 40px 50px;
@@ -190,9 +186,11 @@ onBeforeRouteLeave((to, from) => {
     margin-right: 5px;
     width: 100%;
     height: 40px;
-    border: 1px solid #ccc;
+    border: 1px solid var(--input-border);
     border-radius: 5px;
     font-size: 20px;
+    background-color: var(--input-bg);
+    color: var(--input-text);
 }
 
 .search-item button {
@@ -220,11 +218,12 @@ onBeforeRouteLeave((to, from) => {
 
 .result h3 {
     font-size: 30px;
-    color: rgba(0, 0, 0, 0.848)
+    color: var(--text-primary);
 }
 
 .result li {
     font-size: 20px;
+    color: var(--text-primary);
 }
 
 .icon-sousuo {

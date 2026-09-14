@@ -166,12 +166,6 @@ onUnmounted(() => {
   clearInterval(refreshInterval.value)
 })
 
-import { onBeforeRouteLeave } from 'vue-router';
-onBeforeRouteLeave((to, from) => {
-  if (to.name === 'Articles') { // 仅当跳转到 Articles 路由时设置刷新标记
-    sessionStorage.setItem('refreshAfterEnter', 'Articles');
-  }
-});
 </script>
 
 <style scoped>
@@ -187,37 +181,52 @@ onBeforeRouteLeave((to, from) => {
   left: 50%;
   transform: translate(-50%, -50%);
   padding: 5px;
-  background-color: #f0f0f02d;
-  border: 1px solid #ccc;
+  background-color: var(--panel-bg-soft);
+  border: 1px solid var(--panel-border);
   border-radius: 20px;
   z-index: 1;
   width: 300px;
   height: 40px;
   display: flex;
   flex-direction: row;
+  align-items: center;
+  box-sizing: border-box;
 }
 
 .send-box input {
   width: 80%;
-  height: 20px;
-  padding: 10px;
+  height: 100%;
+  padding: 0 10px;
   font-size: 16px;
-  border: 1px solid #ccc;
+  border: none;
+  outline: none;
+  background-color: transparent;
+  color: var(--input-text);
+  box-sizing: border-box;
+}
+
+.send-box input::placeholder {
+  color: var(--input-placeholder);
 }
 
 .send-box button {
   width: 20%;
-  height: 30px;
+  height: 100%;
   background-color: #38cde400;
   color: #fff;
   border: none;
   border-radius: 20px;
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
 }
 
 .icon-send-line {
-  font-size: 30px !important;
-  color: black !important;
+  font-size: 22px !important;
+  line-height: 1 !important;
+  color: var(--text-primary) !important;
 }
 
 .message-list {
@@ -239,8 +248,9 @@ onBeforeRouteLeave((to, from) => {
   position: absolute;
   padding: 10px;
   font-size: 20px;
-  background-color: #ffffff5f;
-  border: 1px solid #ccc;
+  background-color: var(--card-bg);
+  color: var(--text-primary);
+  border: 1px solid var(--panel-border);
   border-radius: 5px;
   transition: all 1s;
   font-family: cursive;

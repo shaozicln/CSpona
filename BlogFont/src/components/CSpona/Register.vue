@@ -123,12 +123,6 @@ const createUser = async () => {
     }
 };
 
-import { onBeforeRouteLeave } from 'vue-router';
-onBeforeRouteLeave((to, from) => {
-  if (to.name === 'Articles') { // 仅当跳转到 Articles 路由时设置刷新标记
-    sessionStorage.setItem('refreshAfterEnter', 'Articles');
-  }
-});
 </script>
 
 <style scoped>
@@ -143,10 +137,11 @@ onBeforeRouteLeave((to, from) => {
     padding-top: 50px;
     padding-bottom: 25px;
     width: 30vw;
-    border: 1px solid #ddd;
+    border: 1px solid var(--panel-border);
     border-radius: 10px;
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-    background-color: rgba(255, 255, 255, 0.5);
+    background-color: var(--panel-bg);
+    color: var(--text-primary);
     transition: all 0.5s ease-in-out;
     display: flex;
     justify-content: center;
@@ -172,9 +167,11 @@ select {
     height: 40px;
     margin-bottom: 20px;
     padding: 10px;
-    border: 1px solid #ccc;
+    border: 1px solid var(--input-border);
     border-radius: 5px;
     font-size: 20px;
+    background-color: var(--input-bg);
+    color: var(--input-text);
 }
 
 select {
@@ -203,14 +200,14 @@ select {
 }
 
 .register-link {
-    color: #000000;
+    color: var(--text-primary);
     /* black color */
     text-decoration: none;
     font-size: 17px;
 }
 
 .register-link:hover {
-    color: #00000099;
+    color: var(--text-secondary);
     /* gray color on hover */
 }
 

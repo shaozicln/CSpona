@@ -1,34 +1,42 @@
 <template>
   <div class="background">
-    <div id="con" :class="['con', {'centered': !userStore.showForgetPasswordDialog, 'not-centered': userStore.showForgetPasswordDialog}]">
+    <div id="con" :class="['con', { 'with-reset': userStore.showForgetPasswordDialog }]">
       <div id="con-signin">
-        <form class="form" id="form-in">
+        <form class="form" id="form-in" @submit.prevent="userStore.check()">
           <h2 id="tit">Login</h2>
-          <input v-model="userStore.username" placeholder="请输入用户名" type="text" name="username" id="username" /><br />
-          <input v-model="userStore.email" placeholder="请输入邮箱" type="text" name="email" id="email" /><br />
-          <input v-model="userStore.password" placeholder="请输入密码" type="password" name="password" id="password" />
-        </form>
-        <a href="#" @click.prevent="userStore.forgetPassword()" id="forget">忘记密码?</a>
-        <br />
-        <div>
-          <button id="btn登录" @click.prevent="userStore.check()" class="button">登录</button>
-          <br />
-          <div id="con-register">
-            <br />
-            <router-link :to="{ path: '/register' }" class="register-link">没有账号? 去注册</router-link>
+          <input v-model="userStore.username" placeholder="请输入用户名" type="text" name="username" id="username" autocomplete="username" />
+          <input v-model="userStore.email" placeholder="请输入邮箱" type="text" name="email" id="email" autocomplete="email" />
+          <input v-model="userStore.password" placeholder="请输入密码" type="password" name="password" id="password" autocomplete="current-password" />
+          <div class="form-meta">
+            <button
+              type="button"
+              class="link-btn"
+              @click="userStore.showForgetPasswordDialog = !userStore.showForgetPasswordDialog"
+            >
+              {{ userStore.showForgetPasswordDialog ? '收起重置' : '忘记密码？' }}
+            </button>
           </div>
-        </div>
+          <button type="submit" id="btn登录" class="button primary-btn">登录</button>
+          <router-link :to="{ path: '/register' }" class="register-link">没有账号？去注册</router-link>
+        </form>
       </div>
-      
+
       <div id="con-dialog" v-if="userStore.showForgetPasswordDialog">
         <div class="dialog-content">
-          <form id="reset">
-            <input v-model="userStore.newUsername" placeholder="请输入用户名" type="text" /><br />
-            <input v-model="userStore.newEmail" placeholder="请输入邮箱" type="text" name="email" id="email" /><br />
-            <input v-model="userStore.newPassword" placeholder="请输入新密码" type="password" /><br />
-            <input v-model="userStore.newPasswordAgain" placeholder="请再次输入新密码" type="password" @keyup="userStore.checkpassword()" /><br />
+          <h3 class="reset-title">重置密码</h3>
+          <form id="reset" @submit.prevent="userStore.resetPassword()">
+            <input v-model="userStore.newUsername" placeholder="请输入用户名" type="text" autocomplete="username" />
+            <input v-model="userStore.newEmail" placeholder="请输入邮箱" type="text" name="email" autocomplete="email" />
+            <input v-model="userStore.newPassword" placeholder="请输入新密码" type="password" autocomplete="new-password" />
+            <input
+              v-model="userStore.newPasswordAgain"
+              placeholder="请再次输入新密码"
+              type="password"
+              autocomplete="new-password"
+              @keyup="userStore.checkpassword()"
+            />
             <span id="attention" v-html="userStore.attention"></span>
-            <button @click.prevent="userStore.resetPassword()" class="button">重置密码</button>
+            <button type="submit" class="button primary-btn">重置密码</button>
           </form>
         </div>
       </div>
@@ -37,15 +45,8 @@
 </template>
 
 <script setup>
-import { useUserStore } from '@/stores/user';
+import { useUserStore } from '@/stores/user'
 const userStore = useUserStore();
-
-import { onBeforeRouteLeave } from 'vue-router';
-onBeforeRouteLeave((to, from) => {
-  if (to.name === 'Articles') { // 仅当跳转到 Articles 路由时设置刷新标记
-    sessionStorage.setItem('refreshAfterEnter', 'Articles');
-  }
-});
 </script>
 
 <style scoped>
@@ -53,95 +54,47 @@ h2 {
   font-size: 60px;
 }
 
-.centered {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
 .background {
   display: flex;
   justify-content: center;
   align-items: center;
-  height: 100vh;
+  min-height: 100vh;
+  padding: 24px;
+  box-sizing: border-box;
 }
 
 .con {
-  /* width: 600px; /* adjust the width to fit both login and dialog */
-  padding-top: 25px;
-  padding-bottom: 25px;
-  width: 25vw;
-  border: 1px solid #ddd;
-  border-radius: 10px;
+  width: min(420px, 92vw);
+  padding: 28px 28px 32px;
+  border: 1px solid var(--panel-border, #ddd);
+  border-radius: 12px;
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-  background-color: rgba(255, 255, 255, 0.5);
-  transition: all 0.5s ease-in-out;
+  background-color: var(--panel-bg);
+  color: var(--text-primary);
+  transition: width 0.35s ease, padding 0.35s ease;
   display: flex;
-  justify-content: center;
-  align-items: center;
-  transition: all 0.5s ease-in-out;
-}
-
-.con.not-centered {
-  display: flex;
-  align-items: center;
-  justify-content: center;
   flex-direction: row;
-  width: 60vw;
-  padding: 25px;
-  gap: 20px;
+  align-items: stretch;
+  gap: 0;
+  box-sizing: border-box;
 }
 
-.register-link {
-  color: #000000;
-  /* black color */
-  text-decoration: none;
-  font-size: 17px;
-}
-
-.register-link:hover {
-  color: #00000099;
-  /* gray color on hover */
-}
-
-dialog {
-  position: relative;
-  /* changed from absolute to relative */
-  width: 80%;
-  background-color: rgba(255, 255, 255, 0.5);
-  padding: 20px;
-  border: 1px solid #ddd;
-  border-radius: 10px;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-  transition: all 0.5s ease-in-out;
-  z-index: 1000 !important;
-  display: flex !important;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.con.with-reset {
+  width: min(860px, 96vw);
+  gap: 28px;
 }
 
 #con-signin {
-  width: 40%;
-  /* adjust the width to fit the login form */
-  display: inline-block;
-  vertical-align: top;
+  flex: 1;
+  min-width: 0;
 }
 
 #con-dialog {
   flex: 1;
-  margin-left: 20px;
-  transition: all 0.5s ease-in-out;
-  transition-delay: 0.5s;
-}
-
-#con-register {
-  width: 100%;
-  /* adjust the width to 40% */
-  display: inline-block;
-  /* make the container inline-block */
-  vertical-align: top;
-  /* vertically align the container */
+  min-width: 0;
+  padding-left: 28px;
+  border-left: 1px solid var(--panel-border, rgba(0, 0, 0, 0.12));
+  box-sizing: border-box;
 }
 
 #tit {
@@ -149,88 +102,104 @@ dialog {
   margin-bottom: 20px;
 }
 
-#forget {
-  font-size: 15px;
+.reset-title {
+  text-align: center;
+  font-size: 28px;
+  margin: 0 0 18px;
+  font-weight: 600;
 }
 
-.con input,
-select {
-  width: 100%;
-  height: 40px;
-  margin-bottom: 20px;
-  padding: 10px;
-  border: 1px solid #ccc;
-  border-radius: 5px;
-  font-size: 20px;
-}
-
-.button {
-  width: 100px;
-  height: 40px;
-  background-color: rgb(139, 189, 234);
-  /* 修改按钮颜色 */
-  color: #fff;
-  padding: 10px;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-  position: relative;
-  transition: all 0.3s ease-in-out;
-  font-size: 20px;
-}
-
-.button:hover {
-  background-color: rgb(139, 189, 234);
-  transform: translateY(-5px);
-  box-shadow: 0 5px 10px rgba(0, 0, 0, 0.2);
-}
-
-.slide-enter-active,
-.slide-leave-active {
-  transition: all 0.5s ease-in-out;
-}
-
-.slide-enter,
-.slide-leave-to {
-  right: -300px;
-  /* adjust this value to match the width of the dialog */
-}
-
-.slide-enter-to,
-.slide-leave {
-  right: 0;
-}
-
-.slide-out {
-  transform: translateX(300px);
-  opacity: 0;
-}
-
+.form,
 #reset {
-  background-color: rgba(255, 255, 255, 0.493);
+  display: flex;
+  flex-direction: column;
 }
 
-a {
+.form-meta {
+  display: flex;
+  justify-content: flex-end;
+  margin: -8px 0 16px;
+}
+
+.link-btn {
+  border: none;
+  background: transparent;
+  padding: 0;
+  color: var(--text-secondary);
+  font-size: 15px;
+  cursor: pointer;
+  line-height: 1.4;
+}
+
+.link-btn:hover {
+  color: var(--text-primary);
+  text-decoration: underline;
+}
+
+.register-link {
+  display: block;
+  margin-top: 16px;
+  text-align: center;
+  color: var(--text-secondary);
   text-decoration: none;
+  font-size: 16px;
+}
+
+.register-link:hover {
+  color: var(--text-primary);
+}
+
+.con input {
+  width: 100%;
+  height: 42px;
+  margin-bottom: 14px;
+  padding: 10px 12px;
+  border: 1px solid var(--input-border);
+  border-radius: 8px;
+  font-size: 18px;
+  background-color: var(--input-bg);
+  color: var(--input-text);
+  box-sizing: border-box;
+}
+
+.primary-btn {
+  width: 100%;
+  height: 44px;
+  margin-top: 4px;
+  background-color: var(--btn-bg);
+  color: var(--btn-text);
+  padding: 10px;
   border: none;
-  box-shadow: none;
-  outline: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+  font-size: 20px;
 }
 
-a:focus {
-  outline: none;
-  border: none;
-  box-shadow: none;
+.primary-btn:hover {
+  background-color: var(--btn-bg-hover);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
 }
 
-/* Add floating effect to the "Reset" button */
-#btn-reset {
-  position: relative;
-  transition: all 0.3s ease-in-out;
+#attention {
+  min-height: 1.2em;
+  margin-bottom: 8px;
+  font-size: 14px;
+  color: var(--text-secondary);
 }
 
-#btn-reset:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 5px 10px rgba(0, 0, 0, 0.2);
+@media (max-width: 720px) {
+  .con.with-reset {
+    flex-direction: column;
+    width: min(420px, 92vw);
+  }
+
+  #con-dialog {
+    padding-left: 0;
+    padding-top: 20px;
+    border-left: none;
+    border-top: 1px solid var(--panel-border, rgba(0, 0, 0, 0.12));
+  }
 }
 </style>

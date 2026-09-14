@@ -206,12 +206,6 @@ function changeChartType() {
     });
 }
 
-import { onBeforeRouteLeave } from 'vue-router';
-onBeforeRouteLeave((to, from) => {
-  if (to.name === 'Articles') { // 仅当跳转到 Articles 路由时设置刷新标记
-    sessionStorage.setItem('refreshAfterEnter', 'Articles');
-  }
-});
 </script>
 
 <style scoped>
@@ -223,7 +217,8 @@ onBeforeRouteLeave((to, from) => {
 }
 
 .calendar-component {
-    background-color: rgba(255, 255, 255, 0.75);
+    background-color: var(--panel-bg);
+    color: var(--text-primary);
     border-radius: 8px;
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
     padding: 15px;
@@ -231,7 +226,8 @@ onBeforeRouteLeave((to, from) => {
 
 .chart-area {
     position: relative;
-    background-color: rgba(255, 255, 255, 0.3);
+    background-color: var(--panel-bg-soft);
+    color: var(--text-primary);
     border-radius: 8px;
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
     padding: 60px;

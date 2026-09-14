@@ -9,34 +9,61 @@
 
       <!-- 使用计算属性 filteredCategories 渲染列表 -->
       <div class="categories-list">
-        <div class="category-item" v-for="(category, index) in filteredCategories" :key="category.Id"
-          @click="scrollToCategory(index)">
-          <img class="category-icon" :src="getImageUrl(category.Img)" alt="分类图标" />
-          <span class="category-name">
-            {{ category.Name }} ({{ getArticleCounts()[category.Name] || 0 }})
-          </span>
-        </div>
+        <PageLoading
+          v-if="showListLoading"
+          variant="cards"
+          message="分类加载中…"
+        />
+        <PageLoading
+          v-else-if="loadError"
+          error="无法加载分类，请稍后重试"
+          @retry="fetchCategories"
+        />
+        <template v-else>
+          <div class="category-item" v-for="(category, index) in filteredCategories" :key="category.Id"
+            @click="scrollToCategory(index)">
+            <img class="category-icon" :src="getImageUrl(category.Img, category.ImgUrl)" alt="分类图标" />
+            <span class="category-name">
+              {{ category.Name }} ({{ getArticleCounts()[category.Name] || 0 }})
+            </span>
+          </div>
+        </template>
       </div>
     </div>
     <div class="articles">
-      <!-- 文章分类区域（保持不变） -->
-      <div class="article-category" v-for="(category, index) in categories" :key="'category-' + category.Id">
-        <h3 v-if="category && category.Id !== 1000" :id="'category-' + index">
-          {{ category.Name }}
-        </h3>
-        <div class="articles-list" v-if="category.Articles.length > 0">
-          <article class="article" v-for="(article, articleIndex) in category.Articles" :key="'article-' + articleIndex"
-            v-if="category && category.Id !== 1000">
-            <div class="article-content">
-              <img @click="getArticleContent(article.Id)" :src="getImageUrl(article.Img)" alt="文章图片丢失了!" />
-              <span class="article-name">{{ article.Title }}</span>
-            </div>
-          </article>
+      <PageLoading
+        v-if="showListLoading"
+        variant="list"
+        message="文章加载中…"
+      />
+      <PageLoading
+        v-else-if="loadError"
+        error="无法加载文章列表，请稍后重试"
+        @retry="fetchCategories"
+      />
+      <template v-else>
+        <!-- 文章分类区域（保持不变） -->
+        <div class="article-category" v-for="(category, index) in categories" :key="'category-' + category.Id">
+          <h3 v-if="category && category.Id !== 1000" :id="'category-' + index">
+            {{ category.Name }}
+          </h3>
+          <div class="articles-list" v-if="category.Articles?.length > 0">
+            <article
+              class="article"
+              v-for="(article, articleIndex) in category.Articles"
+              :key="'article-' + article.Id + '-' + articleIndex"
+            >
+              <div class="article-content">
+                <img @click="getArticleContent(article.Id)" :src="getImageUrl(article.Img, article.ImgUrl)" alt="文章图片丢失了!" />
+                <span class="article-name">{{ article.Title }}</span>
+              </div>
+            </article>
+          </div>
+          <div v-else-if="category && category.Id !== 1000" class="no-articles">
+            <h3>————敬请期待————</h3>
+          </div>
         </div>
-        <div v-else class="no-articles">
-          <h3>————敬请期待————</h3>
-        </div>
-      </div>
+      </template>
     </div>
   </div>
 
@@ -55,8 +82,14 @@ const route = useRoute();
 const router = useRouter();
 
 import { ref, onMounted, computed } from "vue";
+import { resolveImageUrl } from "@/utils/image.js";
+import PageLoading from "@/components/common/PageLoading.vue";
+import { useDelayedLoading } from "@/composables/useDelayedLoading.js";
 
-const { proxy } = getCurrentInstance();
+const { pending: listPending, visible: listVisible, start: startListLoading, stop: stopListLoading } =
+  useDelayedLoading({ delayMs: 0, minShowMs: 320 });
+const loadError = ref("");
+const showListLoading = computed(() => listPending.value || listVisible.value);
 
 // 每日随机句子数组
 const dailyQuotes = [
@@ -74,39 +107,42 @@ const dailyQuotes = [
   "一点浩然气，千里快哉风",
   "自歌自舞自开怀且喜无拘无碍",
 ];
-const getImageUrl = (imgName) => {
-  return `${proxy.$imageBaseUrl}${imgName}`;
+const getImageUrl = (imgName, resolved) => {
+  return resolveImageUrl(resolved || imgName);
 };
 
 const categories = ref([]);
 
-// 获取分类和文章数据
+// 获取分类和文章数据（BFF 聚合）
 const fetchCategories = async () => {
+  loadError.value = "";
+  startListLoading();
   try {
-    const response = await fetch(`${URL}/categories-with-articles`);
+    const response = await fetch(`${URL}/page/home`);
     const data = await response.json();
+    const list = data?.data?.categories || data?.data || [];
 
-    // 对每个分类下的文章进行降序排序
-    data.data.forEach((category) => {
+    list.forEach((category) => {
       if (category.Articles && category.Articles.length > 0) {
         category.Articles.sort((a, b) => {
-          return new Date(b.CreatedAt) - new Date(a.CreatedAt); // 降序排列
+          return new Date(b.CreatedAt) - new Date(a.CreatedAt);
         });
       }
     });
 
-    categories.value = data.data;
+    categories.value = list;
 
-    console.log(categories.value);
-
-    // 文章数量统计
     const articleCounts = {};
-    data.data.forEach((category) => {
-      articleCounts[category.Name] = category.Articles.length;
+    list.forEach((category) => {
+      articleCounts[category.Name] = (category.Articles || []).length;
     });
     localStorage.setItem("articleCounts", JSON.stringify(articleCounts));
   } catch (error) {
     console.error("Failed to fetch categories:", error);
+    loadError.value = "load_failed";
+    categories.value = [];
+  } finally {
+    await stopListLoading();
   }
 };
 // 过滤掉 Id === 1000 的分类
@@ -143,13 +179,6 @@ onMounted(() => {
   const randomIndex = day % dailyQuotes.length;
   currentQuote.value = dailyQuotes[randomIndex];
 });
-
-onMounted(() => {
-  if (sessionStorage.getItem("refreshAfterEnter") === "Articles") {
-    sessionStorage.removeItem("refreshAfterEnter"); // 清除标记
-    location.reload(); // 刷新页面
-  }
-});
 </script>
 
 <style scoped>
@@ -163,12 +192,14 @@ h2 {
   text-align: center;
   font-size: 30px;
   font-family: cursive;
+  color: var(--text-primary);
 }
 
 h3 {
   text-align: center;
   font-size: 40px;
   font-family: cursive;
+  color: var(--text-primary);
 }
 
 .sidebar {
@@ -190,8 +221,8 @@ h3 {
   align-items: center;
   gap: 15px;
   padding: 20px;
-  border-bottom: 1px solid #eee;
-  background-color:rgb(255, 255, 255, 0.5);
+  border-bottom: 1px solid var(--panel-border);
+  background-color: var(--panel-bg);
   border-radius: 20px;
 }
 
@@ -207,7 +238,7 @@ h3 {
 .daily-quote {
   font-family: Cormorant SC, serif;
   font-size: 20px;
-  color: #000000;
+  color: var(--text-primary);
   text-align: center;
   line-height: 1.5;
   max-width: 90%;
@@ -241,14 +272,15 @@ h3 {
   align-items: center;
   gap: 10px;
   padding: 10px 15px;
-  background-color: rgba(255, 255, 255, 0.5);
-  border: 1px solid white;
+  background-color: var(--panel-bg);
+  border: 1px solid var(--panel-border);
   border-radius: 15px;
   transition: all 0.3s ease;
+  color: var(--text-primary);
 }
 
 .category-item:hover {
-  background-color: #f5f5f5;
+  background-color: var(--hover-bg);
   transform: translateX(5px);
 }
 
@@ -262,7 +294,7 @@ h3 {
 
 .category-name {
   font-size: 16px;
-  color: #333;
+  color: var(--text-primary);
   white-space: nowrap;
   /* 防止文字换行 */
   overflow: hidden;
@@ -309,7 +341,7 @@ h3 {
 
 .article-content {
   position: relative;
-  border: 1px solid black;
+  border: 1px solid var(--panel-border);
   padding: 10px;
   display: flex;
   flex-direction: column;
@@ -355,6 +387,6 @@ h3 {
   text-align: center;
   padding: 20px;
   font-size: 1.2em;
-  color: #1d1d1d;
+  color: var(--text-primary);
 }
 </style>

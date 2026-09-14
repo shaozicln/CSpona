@@ -14,6 +14,7 @@
                 <button class="button" @click="application">友链申请</button>
                 <button class="button" @click="article">文章管理</button>
                 <button class="button" @click="message">留言管理</button>
+                <button class="button" @click="openAboutMe">关于我</button>
             </div>
         </div>
         <div class="modal" v-if="showModal" @click.self="hideModal">
@@ -56,6 +57,29 @@
                 </div>
             </div>
         </div>
+        <div class="modal" v-if="showAboutModal" @click.self="hideAboutModal">
+            <div class="about-modal">
+                <div class="about-modal-header">
+                    <h2>编辑「关于我」</h2>
+                    <div class="about-actions">
+                        <button class="button" type="button" @click="aboutPreview = !aboutPreview">
+                            {{ aboutPreview ? '编辑' : '预览' }}
+                        </button>
+                        <button class="button" type="button" :disabled="aboutSaving" @click="saveAboutMe">
+                            {{ aboutSaving ? '保存中…' : '保存' }}
+                        </button>
+                    </div>
+                </div>
+                <p class="about-hint">内容保存在服务器 Markdown 文件，保存后首页刷新即可看到。</p>
+                <textarea
+                    v-if="!aboutPreview"
+                    v-model="aboutContent"
+                    class="about-editor"
+                    placeholder="用 Markdown 写关于我…"
+                ></textarea>
+                <div v-else class="about-preview" v-html="aboutPreviewHtml"></div>
+            </div>
+        </div>
     </div>
 </template>
 
@@ -66,10 +90,14 @@ const instance = getCurrentInstance();
 const URL = instance?.appContext.config.globalProperties.URL;
 
 import AuthorBack from '../Author/AuthorBack.vue'
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import MarkdownEditor from '../Manage/MarkdownEditor.vue';
 import { nextTick } from 'vue';
+import { apiJson, promptLoginIfUnauthorized } from '@/utils/api';
+import { marked } from 'marked';
+import DOMPurify from 'dompurify';
 
+marked.setOptions({ gfm: true, breaks: true });
 
 const { proxy } = getCurrentInstance()
 const getImageUrl = (imgName) => {
@@ -80,7 +108,56 @@ const title = ref('');
 const content = ref('');
 const showModal = ref(false);
 const advices = ref([]);
+const showAboutModal = ref(false);
+const aboutContent = ref('');
+const aboutPreview = ref(false);
+const aboutSaving = ref(false);
 
+const aboutPreviewHtml = computed(() => {
+  return DOMPurify.sanitize(marked.parse(aboutContent.value || ''));
+});
+
+const openAboutMe = async () => {
+    showAboutModal.value = true;
+    aboutPreview.value = false;
+    try {
+        const { res, data } = await apiJson('/about-me');
+        if (!res.ok) {
+            alert(data?.message || '加载失败');
+            return;
+        }
+        aboutContent.value = data?.data?.content || '';
+    } catch (error) {
+        console.error(error);
+        alert('加载失败');
+    }
+};
+
+const hideAboutModal = () => {
+    showAboutModal.value = false;
+};
+
+const saveAboutMe = async () => {
+    aboutSaving.value = true;
+    try {
+        const { res, data } = await apiJson('/about-me', {
+            method: 'PUT',
+            body: JSON.stringify({ content: aboutContent.value }),
+        });
+        if (promptLoginIfUnauthorized(res, data)) return;
+        if (!res.ok) {
+            alert(data?.message || '保存失败');
+            return;
+        }
+        alert('关于我已保存');
+        showAboutModal.value = false;
+    } catch (error) {
+        console.error(error);
+        alert('保存失败');
+    } finally {
+        aboutSaving.value = false;
+    }
+};
 
 const advice = async () => {
     showModal.value = true;
@@ -386,5 +463,63 @@ h1 {
     display: flex;
     align-content: center;
     justify-content: space-between;
+}
+
+.about-modal {
+    background-color: var(--panel-bg, #fff);
+    color: var(--text-primary, #222);
+    padding: 24px;
+    border-radius: 12px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+    width: min(720px, 92vw);
+    height: min(80vh, 720px);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.about-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.about-modal-header h2 {
+    font-size: 22px;
+    margin: 0;
+}
+
+.about-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.about-hint {
+    font-size: 14px;
+    color: var(--text-secondary, #666);
+    margin: 0;
+}
+
+.about-editor,
+.about-preview {
+    flex: 1;
+    min-height: 0;
+    width: 100%;
+    box-sizing: border-box;
+    border: 1px solid var(--input-border, #ddd);
+    border-radius: 8px;
+    padding: 14px;
+    font-size: 16px;
+    line-height: 1.6;
+    background: var(--input-bg, #fff);
+    color: var(--input-text, #222);
+    overflow: auto;
+    resize: none;
+    font-family: Consolas, Monaco, monospace;
+}
+
+.about-preview {
+    font-family: "楷体", serif;
 }
 </style>

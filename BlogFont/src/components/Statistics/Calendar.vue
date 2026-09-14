@@ -429,7 +429,7 @@ onMounted(() => {
   border-radius: 12px;
   padding: 20px;
   box-shadow: 0 4px 15px rgba(0, 120, 150, 0.1);
-  color: #2d3748;
+  color: var(--text-primary);
   position: relative;
 }
 
@@ -458,7 +458,7 @@ onMounted(() => {
 .current-date {
   display: flex;
   gap: 10px;
-  color: #4a5568;
+  color: var(--text-secondary);
   font-size: 0.95rem;
 }
 
@@ -493,16 +493,18 @@ onMounted(() => {
 }
 
 .month-button.disabled.no-posts {
-  background-color: #f8f9fa;
-  color: #adb5bd;
-  border: 1px dashed #dee2e6;
+  background-color: var(--hover-bg);
+  color: var(--text-muted);
+  border: 1px dashed var(--panel-border);
 }
 
 .month-picker {
   position: absolute;
   top: 100%;
   right: 0;
-  background: white;
+  background: var(--card-bg);
+  color: var(--text-primary);
+  border: 1px solid var(--panel-border);
   border-radius: 8px;
   padding: 12px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
@@ -565,7 +567,7 @@ onMounted(() => {
   left: 0;
   right: 0;
   font-size: 0.8rem;
-  color: #4a5568;
+  color: var(--text-secondary);
 }
 
 .scale-line {
@@ -592,7 +594,7 @@ onMounted(() => {
   position: absolute;
   height: 60px;
   padding: 8px 12px;
-  color: #000;
+  color: var(--text-primary);
   border-radius: 4px;
   transition: all 0.2s;
   box-sizing: border-box;
@@ -671,7 +673,7 @@ onMounted(() => {
   padding-top: 15px;
   border-top: 1px solid rgba(69, 183, 209, 0.3);
   font-size: 0.85rem;
-  color: #4a5568;
+  color: var(--text-secondary);
   display: flex;
   justify-content: space-between;
 }

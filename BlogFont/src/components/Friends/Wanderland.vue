@@ -1,23 +1,29 @@
 <template>
   <div class="wanderland">
-    <!-- 背景图片 -->
-    <img :src="getImageUrl(article.Img)" alt="背景图" class="bg-img" />
+    <!-- 背景图片 + 夜色灰色遮罩 -->
+    <div class="page-bg" aria-hidden="true">
+      <img v-if="coverUrl" :src="coverUrl" alt="背景图" class="bg-img" />
+      <div class="bg-mask"></div>
+    </div>
     <!-- 左侧分类与文章列表 -->
     <div class="slide">
       <div class="category-container">
-        <!-- 错误提示 -->
-        <div v-if="categoryError" class="error-message">
-          {{ categoryError }}
-        </div>
-
-        <!-- 分类列表 -->
-        <div v-else>
+        <PageLoading
+          v-if="showCatLoading"
+          variant="cards"
+          message="漫游列表加载中…"
+        />
+        <PageLoading
+          v-else-if="categoryError"
+          :error="categoryError"
+          @retry="fetchCategories"
+        />
+        <template v-else>
           <div v-for="category in categories" :key="category.Id" class="category-item">
-            <!-- 特殊处理ID为1000的分类 -->
             <div v-if="category.Id === 1000" class="special-articles">
               <div v-for="articleItem in category.Articles" :key="articleItem.Id" class="article-card"
                 @click="loadAndShowArticle(articleItem.Id)" :class="{ 'active-article': articleItem.Id === articleId }">
-                <img :src="getImageUrl(articleItem.Img)" alt="文章缩略图" class="article-img" loading="lazy" />
+                <img :src="getImageUrl(articleItem.Img, articleItem.ImgUrl)" alt="文章缩略图" class="article-img" loading="lazy" />
                 <div class="article-info">
                   <h4 class="article-title">{{ articleItem.Title }}</h4>
                   <p class="article-meta">
@@ -32,26 +38,27 @@
               </div>
             </div>
           </div>
-        </div>
+        </template>
       </div>
     </div>
 
     <!-- 右侧文章内容区 -->
     <div class="content">
-      <!-- 文章错误提示 -->
-      <div v-if="articleError && !isLoadingArticle" class="error-message article-error">
-        {{ articleError }}
-        <button @click="retryLoadArticle" class="retry-btn">重试</button>
-      </div>
-
-      <!-- 文章内容展示 -->
+      <PageLoading
+        v-if="showArtLoading"
+        variant="detail"
+        message="文章加载中…"
+      />
+      <PageLoading
+        v-else-if="articleError"
+        :error="articleError"
+        @retry="retryLoadArticle"
+      />
       <div v-else-if="article && article.Title" class="article-content">
-        <!-- 文章标题区 -->
         <div class="white-box title-section">
           <div style="display: flex; justify-content: space-between; align-items: center;">
             
           <h1 class="article-main-title">{{ article.Title }}</h1>
-            <!-- 使用Font Awesome的编辑图标 -->
             <button v-if="isArticleOwner === true" class="edit-btn" @click="showEditModal = true">
               <i class="fas fa-edit"></i>
             </button>
@@ -62,21 +69,18 @@
             <span>浏览量: {{ article.ViewCount || 0 }}</span>
             <span>评论数: {{ article.CommentCount || 0 }}</span>
           </div>
-          <div class="content-box" v-html="renderMarkdown(article.Content)"></div>
+          <div class="content-box" v-html="renderedContent"></div>
         </div>
 
-        <!-- 评论区 -->
-        <div class="white-box comment-section" v-if="!isLoadingArticle">
+        <div class="white-box comment-section">
           <h3 class="comment-title" style="text-align: center; font-size: 40px; font-family: cursive">
             评论区
           </h3>
-          <!-- 使用更唯一的key强制评论组件在文章ID变化时重新渲染 -->
-          <Comments ref="commentsRef" :article-id="articleId" :key="'comments-' + articleId" />
+          <Comments ref="commentsRef" :article-id="articleId" :initial-comments="pageComments" :key="'comments-' + articleId" />
         </div>
       </div>
 
-      <!-- 文章未找到 -->
-      <div v-else-if="!isLoadingArticle" class="empty-state">
+      <div v-else class="empty-state">
         <p>未找到指定文章</p>
         <button @click="goToDefaultArticle" class="default-btn">
           查看默认文章
@@ -85,13 +89,8 @@
     </div>
   </div>
 
-  <div v-if="isLoadingArticle" class="debug">
-    加载状态: {{ isLoadingArticle }} | 文章ID: {{ articleId }}
-  </div>
-
    <!-- 编辑弹窗遮罩层 -->
   <div v-if="showEditModal" class="modal-overlay" @click="showEditModal = false">
-    <!-- 编辑弹窗内容 - 阻止事件冒泡 -->
     <div class="modal-content" @click.stop>
       <WanderlandPut :article-id="articleId" :article-data="article" @close="showEditModal = false" />
     </div>
@@ -110,17 +109,20 @@ import {
   onUnmounted,
   toRefs,
 } from "vue";
-import { useRouter, useRoute, onBeforeRouteLeave } from "vue-router";
+import { useRouter, useRoute } from "vue-router";
 import { getCurrentInstance } from "vue";
 import { marked } from "marked";
 import hljs from "highlight.js";
 import "highlight.js/styles/github.css";
 import { useArticleStore } from "@/stores/article";
 import { decodeArticleId } from "@/utils/utils.js";
+import { resolveImageUrl, headingIdFromCounter } from "@/utils/image.js";
+import { apiFetch } from "@/utils/api.js";
+import PageLoading from "@/components/common/PageLoading.vue";
+import { useDelayedLoading } from "@/composables/useDelayedLoading.js";
 
 import { library } from '@fortawesome/fontawesome-svg-core';
 import { faEdit } from '@fortawesome/free-solid-svg-icons';
-import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 import WanderlandPut from "./WanderlandPut.vue";
 // 注册图标 
 library.add(faEdit);
@@ -139,75 +141,96 @@ const commentsRef = ref(null);
 // 响应式变量
 const articleId = ref("");
 const article = ref({});
+const pageComments = ref([]);
 const categories = ref([]);
 const users = ref({}); // 缓存用户信息
 const toc = ref([]);
-const headingCounter = {};
+let headingCounter = {};
 const activeSlug = ref("");
-const isLoadingCategories = ref(true); // 分类加载状态
-const isLoadingArticle = ref(false);
 const categoryError = ref(null);
 const articleError = ref(null);
 const isArticleOwner = ref(false);
+const PINNED_WANDERLAND_ID = 95;
+
+const {
+  pending: catPending,
+  visible: catVisible,
+  start: startCatLoading,
+  stop: stopCatLoading,
+} = useDelayedLoading({ delayMs: 0, minShowMs: 280 });
+const {
+  pending: artPending,
+  visible: artVisible,
+  start: startArtLoading,
+  stop: stopArtLoading,
+} = useDelayedLoading({ delayMs: 0, minShowMs: 280 });
+const showCatLoading = computed(() => catPending.value || catVisible.value);
+const showArtLoading = computed(() => artPending.value || artVisible.value);
+let artLoadSeq = 0;
+
+const coverUrl = computed(() => {
+  if (showArtLoading.value) return "";
+  const a = article.value;
+  if (!a) return "";
+  if (a.ImgUrl) return resolveImageUrl(a.ImgUrl, "");
+  if (a.Img) return resolveImageUrl(a.Img, "");
+  return "";
+});
 
 // 获取全局实例与URL
 const instance = getCurrentInstance();
 const { proxy } = getCurrentInstance();
 const URL = instance?.appContext.config.globalProperties.URL;
 
-// 初始化文章ID
-const initArticleId = () => {
-  if (!route.params.articleId) {
-    articleId.value = 95; // 默认值
-    console.log("使用默认文章ID:", articleId.value);
-    return;
-  }
-
-  try {
-    articleId.value = decodeArticleId(route.params.articleId);
-    isLoadingArticle.value = false;
-    console.log("从路由参数获取文章ID:", articleId.value);
-  } catch (e) {
-    console.error("解码文章ID失败:", e);
-    articleId.value = 95; // 回退默认值
-  }
-};
-
 const renderMarkdown = (raw) => {
   if (typeof raw !== "string") {
     raw = String(raw || "");
   }
   try {
-    const htmlContent = marked(raw);
-    console.log(htmlContent);
-
-    return htmlContent;
+    headingCounter = {};
+    return marked.parse(raw);
   } catch (e) {
     console.error("Markdown 渲染失败", e);
     return `<p>渲染失败</p>`;
   }
 };
 
+const renderedContent = computed(() => {
+  if (!article.value?.Content) return "";
+  return renderMarkdown(article.value.Content);
+});
+
 const fetchArticleDetail = async (id) => {
-  const res = await fetch(`${URL}/path-to-article/${id}`);
+  const res = await apiFetch(`/page/article/${id}`);
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  const { data } = await res.json();
+  const body = await res.json();
+  const payload = body.data || {};
+  const data = payload.article || {};
 
   article.value = {
     ...data,
     Content: data.Content ?? data.content ?? "",
     Title: data.Title ?? data.title ?? "未命名文章",
+    ImgUrl: data.ImgUrl,
   };
+  pageComments.value = payload.comments || [];
+  if (payload.author) {
+    users.value[payload.author.Id] = {
+      Username: payload.author.Username,
+      Avatar: payload.author.Avatar,
+      AvatarUrl: payload.author.AvatarUrl,
+    };
+  }
 
-  // 判断文章作者ID与当前用户ID是否相等
-  isArticleOwner.value = String(article.value.UserId) === String(userId.value); // 转为字符串避免类型问题
+  isArticleOwner.value = String(article.value.UserId) === String(userId.value);
 
-  if (data.UserId) await fetchUserInfo(data.UserId);
+  if (data.UserId && !users.value[data.UserId]) await fetchUserInfo(data.UserId);
 };
 
 // 加载并显示文章
 const loadAndShowArticle = async (id) => {
-  isLoadingArticle.value = true;
+  const seq = ++artLoadSeq;
+  startArtLoading();
   articleError.value = null;
   article.value = {};
   try {
@@ -220,22 +243,19 @@ const loadAndShowArticle = async (id) => {
       params: { ...route.params, articleId: encodedId },
     });
     await fetchArticleDetail(id);
+    if (seq !== artLoadSeq) return;
     console.log("文章加载完成", article.value);
-    nextTick(() => {
-      if (commentsRef.value) {
-        commentsRef.value.fetchComments();
-      }
-    });
     window.scrollTo({ top: 0, behavior: "smooth" });
     nextTick(() => {
-      hljs.highlightAll();
+      if (seq !== artLoadSeq) return;
       bindCopyButtons();
     });
   } catch (err) {
+    if (seq !== artLoadSeq) return;
     console.error("加载文章失败:", err);
     articleError.value = "加载文章失败，请稍后重试";
   } finally {
-    isLoadingArticle.value = false;
+    if (seq === artLoadSeq) await stopArtLoading();
   }
 };
 
@@ -262,74 +282,59 @@ watch(
       }
     } catch (e) {
       console.error("路由参数解析错误:", e);
-      loadAndShowArticle(95); // 回退到默认文章
+      loadAndShowArticle(PINNED_WANDERLAND_ID); // 回退到置顶公告
     }
   },
   { immediate: true }
 );
 
-// 配置 marked
-marked.setOptions({
-  gfm: true,
-  breaks: true,
-  renderer: new marked.Renderer(),
-});
-
-// 使用自定义渲染器来处理代码块
-const renderer = new marked.Renderer();
-renderer.code = (code, language) => {
-  const validLanguage =
-    !language || !hljs.getLanguage(language) ? "plaintext" : language;
-  return `<pre class="hljs"><code class="hljs language-${validLanguage}">${hljs.highlightAuto(code).value
-    }</code></pre>`;
-};
-// 如果是本地文件路径，添加前缀
-renderer.image = function () {
-  // 参数解析
-  let href, title, text;
-
-  if (arguments.length >= 3) {
-    [href, title, text] = arguments;
-  } else if (arguments[0] && typeof arguments[0] === "object") {
-    const token = arguments[0];
-    href = token.href;
-    title = token.title;
-    text = token.text;
-  } else {
-    console.error("无法解析图片参数:", arguments);
-    href = "";
-  }
-
-  // 确保 href 是字符串
-  if (typeof href !== "string") {
-    href = String(href);
-  }
-
-  // 编码 URL 并创建图片标签
-  return `<img src="${encodeURI(href)}" 
-               alt="${(text || "").replace(/"/g, "&quot;")}" 
-               title="${(title || "").replace(/"/g, "&quot;")}"
-               class="markdown-image"
-               style="
-                 max-width: 100%;
-                 height: auto;
-                 display: block;
-                 margin: 15px auto;
-                 border-radius: 4px;
-                 background: #f8f8f8;
-                 border: 1px solid #eee;
-                 padding: 4px;
-                 box-sizing: border-box;
-               ">`;
+// marked v15：renderer 收到 token 对象（与文章详情对齐）
+const mdRenderer = {
+  heading({ tokens, depth, text }) {
+    const plain = text || "";
+    const id = headingIdFromCounter(plain, headingCounter);
+    const inner = this.parser.parseInline(tokens);
+    return `<h${depth} id="${id}">${inner}</h${depth}>\n`;
+  },
+  code({ text, lang }) {
+    const language = (lang || "").trim();
+    let highlighted = "";
+    try {
+      if (language && hljs.getLanguage(language)) {
+        highlighted = hljs.highlight(text, {
+          language,
+          ignoreIllegals: true,
+        }).value;
+      } else {
+        highlighted = text
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;");
+      }
+    } catch {
+      highlighted = text
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;");
+    }
+    const icon = `<svg class="copy-icon" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>`;
+    const check = `<svg class="copy-icon copy-icon-check" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>`;
+    return `<div class="code-block"><button type="button" class="copy-button" title="复制" aria-label="复制代码">${icon}${check}</button><pre><code class="language-${language}">${highlighted}</code></pre></div>\n`;
+  },
+  image({ href, title, text }) {
+    const src = typeof href === "string" ? href : String(href || "");
+    const alt = (text || "").replace(/"/g, "&quot;");
+    const t = (title || "").replace(/"/g, "&quot;");
+    return `<img src="${encodeURI(src)}" alt="${alt}" title="${t}" class="markdown-image" />`;
+  },
 };
 
-marked.setOptions({
-  renderer: renderer,
-});
+marked.setOptions({ gfm: true, breaks: true });
+marked.use({ renderer: mdRenderer });
+
 // 获取图片URL
-const getImageUrl = (imgName) => {
-  if (!imgName) return `${proxy.$imageBaseUrl}default-article.jpg`;
-  return `${proxy.$imageBaseUrl}${imgName}`;
+const getImageUrl = (imgName, resolved) => {
+  return resolveImageUrl(resolved || imgName || "default-article.jpg");
 };
 
 // 时间格式化
@@ -344,19 +349,40 @@ function TimeFormat(time) {
   return `${year}/${month}/${day} ${hour}:${minute}`;
 }
 
-// 获取分类数据
+const isPinnedArticle = (item) => {
+  if (!item) return false;
+  if (Number(item.Id) === PINNED_WANDERLAND_ID) return true;
+  const title = item.Title || "";
+  return title.includes("正式开放") && title.includes("Wanderland");
+};
+
+const pinWanderlandList = (list) => {
+  return (list || []).map((cat) => {
+    if (cat.Id !== 1000 || !Array.isArray(cat.Articles)) return cat;
+    const arts = [...cat.Articles].sort((a, b) => {
+      const pa = isPinnedArticle(a);
+      const pb = isPinnedArticle(b);
+      if (pa !== pb) return pa ? -1 : 1;
+      return new Date(b.CreatedAt) - new Date(a.CreatedAt);
+    });
+    return { ...cat, Articles: arts };
+  });
+};
+
+// 获取分类数据（BFF）
 const fetchCategories = async () => {
   try {
-    isLoadingCategories.value = true;
-    const response = await fetch(`${URL}/categories-with-articles`);
+    categoryError.value = null;
+    startCatLoading();
+    const response = await apiFetch(`/page/home`);
     if (!response.ok) throw new Error(`HTTP错误: ${response.status}`);
 
     const data = await response.json();
-    if (!data || !data.data) throw new Error("数据格式不正确");
+    const list = data?.data?.categories || data?.data || [];
+    if (!list) throw new Error("数据格式不正确");
 
-    categories.value = data.data || [];
+    categories.value = pinWanderlandList(list);
 
-    // 预加载用户信息
     const targetCategory = categories.value.find((cat) => cat.Id === 1000);
     if (targetCategory && targetCategory.Articles) {
       for (const article of targetCategory.Articles) {
@@ -369,26 +395,23 @@ const fetchCategories = async () => {
     console.error("获取分类失败:", err);
     categoryError.value = "无法加载分类列表，请稍后重试";
   } finally {
-    isLoadingCategories.value = false;
+    await stopCatLoading();
   }
 };
 
-// 获取文章详情
-
 // 获取用户信息
-const fetchUserInfo = async (userId) => {
+const fetchUserInfo = async (uid) => {
   try {
-    if (users.value[userId]) return;
+    if (users.value[uid]) return;
 
-    const response = await fetch(`${URL}/users/${userId}`);
-    if (!response.ok) throw new Error(`获取用户 ${userId} 信息失败`);
+    const response = await apiFetch(`/users/${uid}`);
+    if (!response.ok) throw new Error(`获取用户 ${uid} 信息失败`);
 
     const data = await response.json();
-    users.value[userId] = data.data;
+    users.value[uid] = data.data;
   } catch (err) {
     console.error("获取用户信息失败:", err);
-    // 使用默认用户信息
-    users.value[userId] = {
+    users.value[uid] = {
       Username: "未知作者",
       Avatar: "default-avatar.jpg",
     };
@@ -400,32 +423,33 @@ const getAuthorName = (userId) => {
   return users.value[userId]?.Username || "未知作者";
 };
 
-// 复制按钮绑定
+// 复制按钮绑定（与文章详情一致，避免重复监听）
 const bindCopyButtons = () => {
-  const copyButtons = document.querySelectorAll(".copy-button");
-  copyButtons.forEach((button) => {
-    button.addEventListener("click", () => {
-      const codeBlock = button.parentElement.querySelector("code");
-      const codeText = codeBlock.innerText;
-
-      navigator.clipboard
-        .writeText(codeText)
-        .then(() => {
-          button.textContent = "已复制";
-          button.classList.add("copied");
-          setTimeout(() => {
-            button.textContent = "复制";
-            button.classList.remove("copied");
-          }, 2000);
-        })
-        .catch((err) => {
-          console.error("复制失败:", err);
-          button.textContent = "复制失败";
-          setTimeout(() => {
-            button.textContent = "复制";
-          }, 2000);
-        });
-    });
+  document.querySelectorAll(".copy-button").forEach((button) => {
+    button.onclick = async () => {
+      const codeBlock = button.parentElement?.querySelector("code");
+      const codeText = codeBlock?.innerText || "";
+      try {
+        if (navigator.clipboard?.writeText) {
+          await navigator.clipboard.writeText(codeText);
+        } else {
+          const textarea = document.createElement("textarea");
+          textarea.value = codeText;
+          document.body.appendChild(textarea);
+          textarea.select();
+          document.execCommand("copy");
+          document.body.removeChild(textarea);
+        }
+        button.classList.add("copied");
+        button.title = "已复制";
+        setTimeout(() => {
+          button.classList.remove("copied");
+          button.title = "复制";
+        }, 1600);
+      } catch (err) {
+        console.error("复制失败:", err);
+      }
+    };
   });
 };
 
@@ -468,97 +492,95 @@ const scrollToContent = (slug) => {
 // 重试加载文章
 const retryLoadArticle = () => {
   if (articleId.value) {
-    loadArticle(articleId.value);
     loadAndShowArticle(articleId.value);
   } else {
     goToDefaultArticle();
   }
 };
 
-// 跳转到默认文章
+// 跳转到默认置顶文章
 const goToDefaultArticle = () => {
-  const encodedId = window.btoa(95);
-  router.push(`/article/${encodedId}`);
+  loadAndShowArticle(PINNED_WANDERLAND_ID);
 };
 
-// 初始化
+// 初始化：路由 watch(immediate) 负责有参数时加载；无参数时打开置顶公告
 onMounted(async () => {
-  console.log(`组件挂载开始`);
-
-  // 初始化文章ID
-  initArticleId();
-  console.log(`初始化文章ID: ${articleId.value}`);
-
-  // 只加载分类，文章加载由路由监听处理
   await fetchCategories();
-  console.log(`分类加载完成`);
-
-  const defaultId = 95;
-  await loadAndShowArticle(defaultId);
-
-  // 绑定事件监听
+  if (!route.params.articleId) {
+    await loadAndShowArticle(articleId.value || PINNED_WANDERLAND_ID);
+  }
   window.addEventListener("scroll", handleScroll);
-  console.log(`滚动监听已添加`);
 });
 
 // 清理工作
 onUnmounted(() => {
   window.removeEventListener("scroll", handleScroll);
 });
-
-onBeforeRouteLeave((to, from) => {
-  if (to.name === "Articles") {
-    // 仅当跳转到 Articles 路由时设置刷新标记
-    sessionStorage.setItem("refreshAfterEnter", "Articles");
-  }
-});
 </script>
 
 <style scoped>
-/* 基础布局 */
+/* 基础布局：给顶部导航留空，避免 100vh 把 nav 顶走/盖住 */
 .wanderland {
   display: flex;
   width: 100%;
-  min-height: 100vh;
+  height: calc(100vh - 4.75rem);
+  min-height: 0;
   gap: 10px;
+}
+
+.page-bg {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.page-bg .bg-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.page-bg .bg-mask {
+  position: absolute;
+  inset: 0;
+  background: var(--bg-mask);
+  transition: background 0.25s ease;
 }
 
 /* 左侧区域 */
 .slide {
+  position: relative;
+  z-index: 1;
   width: 25%;
   padding: 20px;
   box-sizing: border-box;
   overflow-y: auto;
-  max-height: 100vh;
+  max-height: 100%;
   /* 细边框分隔 */
-  background-color: rgba(255, 255, 255, 0.95);
-  height: 100vh;
+  background-color: var(--panel-bg);
+  color: var(--text-primary);
+  height: 100%;
 }
 
 /* 右侧内容区 */
 .content {
-  width: 75%;
-  height: 100vh;
-  background-color: rgba(255, 255, 255, 0.8);
   position: relative;
+  z-index: 1;
+  width: 75%;
+  height: 100%;
+  background-color: var(--panel-bg);
+  color: var(--text-primary);
   box-sizing: border-box;
   overflow-y: auto;
 }
 
-/* 背景图 */
-.bg-img {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100vh;
-  object-fit: cover;
-  z-index: -1;
-  /* filter: brightness(0.8); */
-}
-
 .article-count {
-  color: #666;
+  color: var(--text-secondary);
   font-size: 14px;
   font-weight: normal;
 }
@@ -573,14 +595,27 @@ onBeforeRouteLeave((to, from) => {
 .article-card {
   border-radius: 8px;
   overflow: hidden;
+  background-color: var(--card-bg);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  transition: all 0.3s ease;
+  transition: background-color 0.25s ease, box-shadow 0.25s ease;
   cursor: pointer;
+  border: 1px solid transparent;
+}
+
+.article-card:hover {
+  background-color: var(--hover-bg);
 }
 
 .active-article {
-  border: 2px solid #42b983;
-  box-shadow: 0 2px 12px rgba(66, 185, 131, 0.3);
+  background-color: var(--toc-active-bg);
+  box-shadow:
+    inset 3px 0 0 var(--toc-active-bar),
+    0 2px 10px rgba(0, 0, 0, 0.08);
+  border-color: transparent;
+}
+
+.active-article .article-title {
+  color: var(--toc-active-text);
 }
 
 .article-img {
@@ -612,7 +647,7 @@ onBeforeRouteLeave((to, from) => {
 
 .article-meta {
   font-size: 12px;
-  color: #666;
+  color: var(--text-secondary);
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -632,7 +667,7 @@ onBeforeRouteLeave((to, from) => {
 .article-main-title {
   font-size: 28px;
   margin-bottom: 15px;
-  color: #333;
+  color: var(--text-primary);
   line-height: 1.3;
 }
 
@@ -641,7 +676,7 @@ onBeforeRouteLeave((to, from) => {
   flex-wrap: wrap;
   gap: 15px;
   font-size: 14px;
-  color: #666;
+  color: var(--text-secondary);
   padding-bottom: 10px;
 }
 
@@ -656,7 +691,7 @@ onBeforeRouteLeave((to, from) => {
 .content-box h2,
 .content-box h3 {
   margin: 20px 0 15px;
-  color: #2c3e50;
+  color: var(--text-primary);
 }
 
 .content-box p {
@@ -674,7 +709,7 @@ onBeforeRouteLeave((to, from) => {
 
 .comment-section {
   margin-top: 20px;
-  border-top: 2px solid #0000002a;
+  border-top: 2px solid var(--panel-border);
   padding: 10px 0 0 0;
 }
 
@@ -684,16 +719,71 @@ onBeforeRouteLeave((to, from) => {
   padding-bottom: 10px;
 }
 
-/* 代码块样式 */
+/* 代码块样式（与文章详情对齐） */
+.content-box :deep(.code-block),
 .code-block {
   position: relative;
   margin: 15px 0;
-  border-radius: 4px;
+  border-radius: 6px;
+  border: 1px solid var(--code-border);
+  background-color: var(--code-bg);
   overflow: hidden;
+  color: var(--code-text);
+}
+
+.content-box :deep(.code-block pre),
+.content-box :deep(.code-block code) {
+  margin: 0;
+  color: var(--code-text);
+  background: transparent;
+}
+
+.content-box :deep(.copy-button) {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--copy-icon);
+  padding: 4px;
+  line-height: 0;
+}
+
+.content-box :deep(.copy-button:hover) {
+  color: var(--copy-icon-hover);
+}
+
+.content-box :deep(.copy-icon-check) {
+  display: none;
+}
+
+.content-box :deep(.copy-button.copied) {
+  color: #1a7f37;
+}
+
+.content-box :deep(.copy-button.copied .copy-icon:not(.copy-icon-check)) {
+  display: none;
+}
+
+.content-box :deep(.copy-button.copied .copy-icon-check) {
+  display: inline;
+}
+
+.content-box :deep(.markdown-image) {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  margin: 15px auto;
+  border-radius: 4px;
+  border: 1px solid var(--panel-border);
+  box-sizing: border-box;
 }
 
 pre {
-  background-color: #f8f9fa;
+  background-color: var(--code-bg);
+  color: var(--code-text);
+  border: 1px solid var(--code-border);
   padding: 15px;
   overflow-x: auto;
 }
@@ -701,14 +791,16 @@ pre {
 code {
   font-family: "Consolas", "Monaco", monospace;
   font-size: 14px;
+  color: var(--code-text);
 }
 
 .copy-button {
   position: absolute;
   top: 10px;
   right: 10px;
-  background-color: rgba(255, 255, 255, 0.8);
-  border: 1px solid #ddd;
+  background-color: var(--input-bg);
+  color: var(--text-primary);
+  border: 1px solid var(--input-border);
   border-radius: 4px;
   padding: 4px 8px;
   font-size: 12px;
@@ -717,7 +809,7 @@ code {
 }
 
 .copy-button:hover {
-  background-color: #fff;
+  background-color: var(--hover-bg);
   border-color: #42b983;
 }
 
@@ -725,8 +817,8 @@ code {
 .loading {
   padding: 20px;
   text-align: center;
-  color: #666;
-  background-color: rgba(255, 255, 255, 0.9);
+  color: var(--text-secondary);
+  background-color: var(--card-bg);
   border-radius: 8px;
 }
 
@@ -751,7 +843,7 @@ code {
   padding: 20px;
   text-align: center;
   color: #e74c3c;
-  background-color: rgba(255, 255, 255, 0.9);
+  background-color: var(--card-bg);
   border-radius: 8px;
 }
 
@@ -783,8 +875,8 @@ code {
 .empty-hint {
   text-align: center;
   padding: 20px;
-  color: #666;
-  background-color: rgba(255, 255, 255, 0.8);
+  color: var(--text-secondary);
+  background-color: var(--card-bg);
   border-radius: 8px;
 }
 
@@ -851,6 +943,7 @@ code {
   /* 增加行高（核心） */
   font-size: 16px;
   /* 优化字体大小 */
+  color: var(--text-primary);
 }
 
 .content-box p {
@@ -883,12 +976,18 @@ code {
   border: none;
   font-size: 24px;
   cursor: pointer;
-  opacity: 0.7;
-  transition: opacity 0.3s;
+  opacity: 0.85;
+  transition: opacity 0.3s, color 0.2s;
+  color: var(--text-primary);
+}
+
+.edit-btn i {
+  color: inherit;
 }
 
 .edit-btn:hover {
   opacity: 1;
+  color: var(--text-primary);
 }
 
 /* 新增弹窗样式 */
@@ -910,7 +1009,9 @@ code {
   max-width: 1000px;
   max-height: 90vh;
   overflow-y: auto;
-  background-color: white;
+  background-color: var(--panel-bg);
+  color: var(--text-primary);
+  border: 1px solid var(--panel-border);
   border-radius: 8px;
   padding: 20px;
 }

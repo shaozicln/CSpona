@@ -10,10 +10,6 @@
                 href="mailto:changbingmushao@qq.com">{{ email }}</a></li>
             <li><font-awesome-icon :icon="['fab', 'github']"></font-awesome-icon> gitHub：<a
                 href="https://github.com/shaozicln" target="_blank">{{ gitHub }}</a> </li>
-            <li>性别: {{ sex }}</li>
-            <li>大学: {{ university }}</li>
-            <li>专业: {{ major }}</li>
-            <li>现居地: {{ address }}</li>
           </ul>
         </div>
       </div>
@@ -55,10 +51,6 @@ const getImageUrl = (imgName) => {
   const author = ref('长柄木勺')
   const email = ref('changbingmushao@qq.com')
   const gitHub = ref('shaozicln')
-  const sex = ref('女')
-  const university = ref('东北农业大学')
-  const major = ref('计算机科学与技术')
-  const address = ref('中国-哈尔滨')
   const show = ref(false)
   
   function hide() {
@@ -80,9 +72,10 @@ const getImageUrl = (imgName) => {
   }
 
   .info-box {
-    background-color: rgba(255, 255, 255, 0.8);
+    background-color: var(--panel-bg);
+    color: var(--text-primary);
     padding: 20px;
-    border: 1px solid #ddd;
+    border: 1px solid var(--panel-border);
     border-radius: 10px;
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
     text-align: center;
@@ -111,18 +104,19 @@ const getImageUrl = (imgName) => {
     padding: 0;
     margin: 0;
     font-size: 20px;
+    color: var(--text-primary);
+  }
 
-    a:link {
-      color: rgba(0, 0, 0, 0.7);
-    }
+  .info-box a,
+  .info-box a:link,
+  .info-box a:visited {
+    color: var(--text-primary);
+    text-decoration: none;
+  }
 
-    a:visited {
-      color: rgba(0, 0, 0, 0.7);
-    }
-
-    a:hover {
-      color: rgba(0, 0, 0, 0.7);
-    }
+  .info-box a:hover {
+    color: var(--text-primary);
+    opacity: 0.8;
   }
 
   .author-info {

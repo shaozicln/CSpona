@@ -258,42 +258,99 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.edit{
-    display: flex;
-    flex-direction: column;
+.edit {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  color: var(--text-primary);
+}
+
+.edit > div {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.edit input[type="file"] {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  border: 1px solid var(--input-border);
+  border-radius: 8px;
+  background: var(--input-bg);
+  color: var(--input-text);
+  font-size: 16px;
+}
+
+.edit input[type="text"] {
+  flex: 1;
+  min-width: 0;
+  box-sizing: border-box;
+  height: 40px;
+  padding: 8px 12px;
+  border: 1px solid var(--input-border);
+  border-radius: 8px;
+  background: var(--input-bg);
+  color: var(--input-text);
+  font-size: 16px;
+}
+
+.edit .button {
+  flex-shrink: 0;
+  width: 100px;
+  height: 40px;
+  padding: 0 12px;
+  border: none;
+  border-radius: 20px;
+  background-color: var(--btn-bg);
+  color: var(--btn-text);
+  font-size: 18px;
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+.edit .button:hover {
+  background-color: var(--btn-bg-hover);
+  transform: translateY(-2px);
 }
 
 .button-group button {
   padding: 5px 10px;
   margin-right: 5px;
-  background: none;
-  border: 1px solid #d1d5da;
+  background: transparent;
+  color: var(--text-primary);
+  border: 1px solid var(--input-border);
   border-radius: 4px;
   cursor: pointer;
 }
 
 .button-group button.active {
-  background-color: rgb(139, 189, 234);
-  color: white;
-  border-color: rgb(139, 189, 234);
+  background-color: var(--btn-bg);
+  color: var(--btn-text);
+  border-color: var(--btn-bg);
 }
 
 .markdown-input {
   width: 100%;
   height: 400px;
   padding: 10px;
-  border: 1px solid rgb(255, 255, 255);
+  border: 1px solid var(--input-border);
   border-radius: 5px;
   resize: vertical;
+  background: var(--input-bg);
+  color: var(--input-text);
+  box-sizing: border-box;
 }
 
 .markdown-preview {
   height: 400px;
   padding: 10px;
-  background-color: rgba(255, 255, 255, 0.86);
-  border: 1px solid #ddd;
+  background-color: var(--panel-bg-soft);
+  color: var(--text-primary);
+  border: 1px solid var(--input-border);
   border-radius: 5px;
   overflow: auto;
+  box-sizing: border-box;
 }
 
 .format-buttons {
@@ -304,18 +361,18 @@ onMounted(() => {
 
 .format-buttons button {
   padding: 5px 10px;
-  background: none;
-  border: 1px solid #d1d5da;
+  background: transparent;
+  color: var(--text-primary);
+  border: 1px solid var(--input-border);
   border-radius: 4px;
   cursor: pointer;
   min-width: 30px;
 }
 
 .format-buttons button:hover {
-  background-color: #f6f8fa;
+  background-color: var(--hover-bg);
 }
 
-/* Image dialog styles */
 .image-dialog {
   position: fixed;
   top: 0;
@@ -330,11 +387,13 @@ onMounted(() => {
 }
 
 .dialog-content {
-  background-color: white;
+  background-color: var(--panel-bg);
+  color: var(--text-primary);
   padding: 20px;
   border-radius: 8px;
   width: 500px;
   max-width: 90%;
+  border: 1px solid var(--panel-border);
 }
 
 .image-options {
@@ -361,33 +420,35 @@ onMounted(() => {
 }
 
 .dialog-buttons button:first-child {
-  background-color: rgb(139, 189, 234);
-  color: white;
+  background-color: var(--btn-bg);
+  color: var(--btn-text);
   border: none;
 }
 
 .dialog-buttons button:last-child {
-  background: none;
-  border: 1px solid #d1d5da;
+  background: transparent;
+  color: var(--text-primary);
+  border: 1px solid var(--input-border);
 }
 
-/* Preview styles */
-.markdown-preview :deep() img {
+.markdown-preview :deep(img) {
   max-width: 100%;
   height: auto;
   border-radius: 4px;
 }
 
-.markdown-preview :deep() pre {
-  background-color: #f6f8fa;
+.markdown-preview :deep(pre) {
+  background-color: var(--code-bg);
+  color: var(--code-text);
   padding: 16px;
   border-radius: 6px;
   overflow-x: auto;
+  border: 1px solid var(--code-border);
 }
 
-.markdown-preview :deep() code {
+.markdown-preview :deep(code) {
   font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
-  background-color: rgba(27, 31, 35, 0.05);
+  background-color: var(--hover-bg);
   padding: 0.2em 0.4em;
   border-radius: 3px;
   font-size: 85%;
@@ -396,12 +457,14 @@ onMounted(() => {
 .bu {
   width: 100%;
   display: flex;
-  justify-items: space-between;
-  align-content: center;
+  justify-content: space-between;
+  align-items: center;
   margin-bottom: 10px;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
 .file-input {
-  width: 480px;
+  width: min(480px, 100%);
 }
 </style>

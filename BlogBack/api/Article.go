@@ -33,29 +33,37 @@ func (Article) TableName() string {
 
 // 图片上传接口
 func UploadImage(c *gin.Context) {
-	// 获取文件
 	file, err := c.FormFile("img")
 	if err != nil {
-		c.JSON(500, gin.H{"error": "无法获取文件"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "无法获取文件: " + err.Error()})
+		return
+	}
+	if file.Size > 8<<20 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "图片不能超过 8MB"})
 		return
 	}
 
-	// 定义基本目录
 	baseDir := utils.GetImageBaseDir()
-	// 获取上传的文件名
 	filename := filepath.Base(file.Filename)
-	// 生成唯一文件名
+	ext := strings.ToLower(filepath.Ext(filename))
+	switch ext {
+	case ".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp":
+	default:
+		c.JSON(http.StatusBadRequest, gin.H{"error": "仅支持 jpg/png/gif/webp/bmp"})
+		return
+	}
 	uniqueFilename := time.Now().Format("20060102150405") + "_" + filename
-	// 连接字段，形成存储路径
 	savePath := filepath.Join(baseDir, uniqueFilename)
-	savePath = strings.ReplaceAll(savePath, "\\", "/") // 兼容不同操作系统
 
-	// 创建保存路径所在目录
-	_ = os.MkdirAll(baseDir, os.ModePerm)
-	// 保存文件
-	_ = c.SaveUploadedFile(file, savePath)
+	if err := os.MkdirAll(baseDir, 0755); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "创建目录失败: " + err.Error()})
+		return
+	}
+	if err := c.SaveUploadedFile(file, savePath); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "保存失败: " + err.Error()})
+		return
+	}
 
-	// 返回图片 URL
 	imageUrl := "/Pictures/" + uniqueFilename
 	c.JSON(200, gin.H{"imageUrl": imageUrl})
 }
@@ -79,22 +87,27 @@ func SearchArticle(c *gin.Context) {
 
 func PostArticle(c *gin.Context) {
 	var article Article
-	//获取文件，错误处理
 	file, err := c.FormFile("img")
 	if err != nil {
-		c.JSON(500, gin.H{"error": "无法获取文件"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "无法获取封面图: " + err.Error()})
 		return
 	}
-	baseDir := utils.GetImageBaseDir()         //定义基本目录
-	filename := filepath.Base(file.Filename)           //获取上传的文件名
-	savePath := filepath.Join(baseDir, filename)       //连接字段，形成存储路径
-	savePath = strings.ReplaceAll(savePath, "\\", "/") // 将路径用正斜杠保存，兼容不同操作系统，同时方便前端读取
+	baseDir := utils.GetImageBaseDir()
+	filename := filepath.Base(file.Filename)
+	uniqueFilename := time.Now().Format("20060102150405") + "_" + filename
+	savePath := filepath.Join(baseDir, uniqueFilename)
 
-	_ = os.MkdirAll(baseDir, os.ModePerm) //创建保存路径所在目录，目录存在则忽略，同时忽略了错误处理
-	_ = c.SaveUploadedFile(file, savePath)
+	if err := os.MkdirAll(baseDir, 0755); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "创建目录失败: " + err.Error()})
+		return
+	}
+	if err := c.SaveUploadedFile(file, savePath); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "封面保存失败: " + err.Error()})
+		return
+	}
 
-	article.Img = filename              //只存储文件名字
-	article.Title = c.PostForm("title") //数据库其他字段和数据
+	article.Img = uniqueFilename
+	article.Title = c.PostForm("title")
 	article.Content = c.PostForm("content")
 	categoryId, _ := strconv.Atoi(c.PostForm("category_id"))
 	article.CategoryId = uint(categoryId)
@@ -118,17 +131,21 @@ func PutArticle(c *gin.Context) {
 
     // 处理文件上传（背景图）
     file, err := c.FormFile("img")
-    if err == nil { // 如果有上传背景图文件
+    if err == nil {
         baseDir := utils.GetImageBaseDir()
         filename := filepath.Base(file.Filename)
-        savePath := filepath.Join(baseDir, filename)
-        savePath = strings.ReplaceAll(savePath, "\\", "/")
+        uniqueFilename := time.Now().Format("20060102150405") + "_" + filename
+        savePath := filepath.Join(baseDir, uniqueFilename)
 
-        // 创建目录并保存文件
-        _ = os.MkdirAll(baseDir, os.ModePerm)
-        if err := c.SaveUploadedFile(file, savePath); err == nil {
-            article.Img = filename // 更新背景图文件名
+        if mkErr := os.MkdirAll(baseDir, 0755); mkErr != nil {
+            c.JSON(http.StatusInternalServerError, gin.H{"error": "创建目录失败: " + mkErr.Error()})
+            return
         }
+        if saveErr := c.SaveUploadedFile(file, savePath); saveErr != nil {
+            c.JSON(http.StatusInternalServerError, gin.H{"error": "封面保存失败: " + saveErr.Error()})
+            return
+        }
+        article.Img = uniqueFilename
     }
 
     // 处理其他字段，若前端传递的参数为空则使用原始数据

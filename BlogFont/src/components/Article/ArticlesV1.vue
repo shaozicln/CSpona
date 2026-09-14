@@ -129,13 +129,6 @@ const getArticleContent = (articleId) => {
 onMounted(() => {
   fetchCategories();
 });
-
-onMounted(() => {
-  if (sessionStorage.getItem('refreshAfterEnter') === 'Articles') {
-    sessionStorage.removeItem('refreshAfterEnter'); // 清除标记
-    location.reload(); // 刷新页面
-  }
-});
 </script>
 
 <style scoped>

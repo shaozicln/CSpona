@@ -347,76 +347,106 @@ const submitUpdate = async () => {
 </script>
 
 <style scoped>
+.article-put {
+  color: var(--text-primary);
+}
+
+.article-put h2 {
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.article-put input[type="text"],
+.article-put select {
+  width: 100%;
+  box-sizing: border-box;
+  margin: 10px 0 16px;
+  padding: 10px 12px;
+  border: 1px solid var(--input-border);
+  border-radius: 8px;
+  background: var(--input-bg);
+  color: var(--input-text);
+  font-size: 16px;
+}
+
+.article-put label {
+  color: var(--text-primary);
+  font-size: 15px;
+}
+
 .image-upload {
   margin: 15px 0;
-  padding: 10px;
-  border: 1px dashed #ddd;
-  border-radius: 4px;
+  padding: 12px;
+  border: 1px dashed var(--input-border);
+  border-radius: 8px;
+  background: var(--panel-bg-soft);
 }
 
 .file-input {
-  width:480px;
+  width: min(480px, 100%);
+  color: var(--text-secondary);
 }
 
 .preview {
   margin-top: 10px;
 }
+
 .delete-btn {
   background: none;
   border: none;
   font-size: 20px;
   cursor: pointer;
-  color: #e53e3e; /* 红色 */
+  color: #f87171;
   transition: all 0.2s ease;
   padding: 4px 8px;
   border-radius: 4px;
 }
 
 .delete-btn:hover {
-  color: #c53030; /* 深一点的红色 */
-  background-color: rgba(229, 62, 62, 0.1);
+  color: #ef4444;
+  background-color: rgba(239, 68, 68, 0.15);
 }
 
-/* 关闭按钮样式 */
 .close-btn {
   background: none;
   border: none;
-  font-size: 20px;
+  font-size: 22px;
   cursor: pointer;
-  color: #666;
+  color: var(--text-secondary);
   transition: all 0.2s ease;
   padding: 4px 8px;
   border-radius: 4px;
 }
 
 .close-btn:hover {
-  color: #333;
-  background-color: rgba(0, 0, 0, 0.05);
+  color: var(--text-primary);
+  background-color: var(--hover-bg);
 }
 
-.modal-title{
-display: flex;
+.modal-title {
+  display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 12px;
 }
 
-/* 模态框头部样式 */
 .modal-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 20px;
   padding-bottom: 10px;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid var(--panel-border);
 }
 
-
 .dialog-content {
-  background-color: white;
+  background-color: var(--panel-bg);
+  color: var(--text-primary);
   padding: 20px;
   border-radius: 8px;
   width: 500px;
   max-width: 90%;
+  border: 1px solid var(--panel-border);
 }
 
 .image-options {
@@ -443,75 +473,80 @@ display: flex;
 }
 
 .dialog-buttons button:first-child {
-  background-color: rgb(139,189,234);
-  color: white;
+  background-color: var(--btn-bg);
+  color: var(--btn-text);
   border: none;
 }
 
 .dialog-buttons button:last-child {
-  background: none;
-  border: 1px solid #d1d5da;
+  background: transparent;
+  color: var(--text-primary);
+  border: 1px solid var(--input-border);
 }
-
 
 .button-group {
   display: flex;
   justify-content: flex-end;
   gap: 10px;
   margin-top: 20px;
+  flex-wrap: wrap;
 }
 
 .cancel-btn {
   padding: 8px 16px;
-  border: 1px solid #ddd;
-  background: none;
+  border: 1px solid var(--input-border);
+  background: transparent;
+  color: var(--text-primary);
   border-radius: 4px;
   cursor: pointer;
 }
 
 .button-group .submit-btn {
   padding: 8px 16px;
-  background-color: rgb(139, 189, 234);
-  color: white;
+  background-color: var(--btn-bg);
+  color: var(--btn-text);
   border: none;
   border-radius: 4px;
   cursor: pointer;
 }
 
-/* 复用原有编辑器样式 */
 .button-group button {
   padding: 5px 10px;
   margin-right: 5px;
-  background: none;
-  border: 1px solid #d1d5da;
+  background: transparent;
+  color: var(--text-primary);
+  border: 1px solid var(--input-border);
   border-radius: 4px;
   cursor: pointer;
 }
 
 .button-group button.active {
-  background-color: rgb(139, 189, 234);
-  color: white;
-  border-color: rgb(139, 189, 234);
+  background-color: var(--btn-bg);
+  color: var(--btn-text);
+  border-color: var(--btn-bg);
 }
+
 .markdown-input,
 .markdown-preview {
   width: 100%;
   padding: 10px;
-  border: 1px solid #ddd;
+  border: 1px solid var(--input-border);
   border-radius: 5px;
-  resize: vertical; /* 保持 textarea 可垂直resize，和预览区行为呼应 */
-  overflow: auto; /* 统一滚动行为 */
-  box-sizing: border-box; /* 让 padding、border 算在宽高内，避免超出 */
+  resize: vertical;
+  overflow: auto;
+  box-sizing: border-box;
+  background: var(--input-bg);
+  color: var(--input-text);
 }
 
 .markdown-input {
-  height: 400px; /* 可根据需求调整，和预览区初始高度一致 */
+  height: 400px;
 }
 
 .markdown-preview {
   height: 400px;
-  background-color: rgba(255, 255, 255, 0.86);
-  /* 去掉多余的样式干扰，和 textarea 保持基础盒模型一致 */
+  background-color: var(--panel-bg-soft);
+  color: var(--text-primary);
 }
 
 .format-buttons {
@@ -521,14 +556,19 @@ display: flex;
 }
 
 .format-buttons button {
-  background: none;
-  border: 1px solid #d1d5da;
+  background: transparent;
+  color: var(--text-primary);
+  border: 1px solid var(--input-border);
   border-radius: 4px;
   cursor: pointer;
   min-width: 30px;
+  padding: 4px 8px;
 }
 
-/* 图片弹窗样式 */
+.format-buttons button:hover {
+  background-color: var(--hover-bg);
+}
+
 .image-dialog {
   position: fixed;
   top: 0;
@@ -542,56 +582,13 @@ display: flex;
   z-index: 1010;
 }
 
-.dialog-content {
-  background-color: white;
-  padding: 20px;
-  border-radius: 8px;
-  width: 500px;
-  max-width: 90%;
-}
-
 .bu {
-  width:100%;
+  width: 100%;
   display: flex;
-  justify-items: space-between;
-  align-content: center;
-  margin-bottom:10px;
-  gap:10px;
-}
-
-
-.button-group button {
-  margin-right: 5px;
-  background: none;
-  border: 1px solid #d1d5da;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-.button-group button.active {
-  background-color: rgb(139,189,234);
-  color: white;
-  border-color: rgb(139,189,234);
-}   
-
-
-/* New styles for editor */
-.format-buttons {
-  display: flex;
-  gap: 7px;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  gap: 10px;
   flex-wrap: wrap;
 }
-
-.format-buttons button {
-  background: none;
-  border: 1px solid #d1d5da;
-  border-radius: 4px;
-  cursor: pointer;
-  min-width: 30px;
-}
-
-.format-buttons button:hover {
-  background-color: #f6f8fa;
-}
-
 </style>

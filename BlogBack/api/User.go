@@ -1,6 +1,7 @@
 package api
 
 import (
+	"BlogBack/middleware"
 	"BlogBack/utils"
 	"encoding/base64"
 	"github.com/gin-gonic/gin"
@@ -80,10 +81,26 @@ func PostUser(c *gin.Context) {
 
 func PutUser(c *gin.Context) {
 	Id := c.Param("id")
+	targetID, err := strconv.ParseUint(Id, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "无效的用户ID"})
+		return
+	}
+
+	authUID, ok := middleware.GetUserID(c)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "请先登录"})
+		return
+	}
+	role := middleware.GetRoleQx(c)
+	if role != "A" && uint64(authUID) != targetID {
+		c.JSON(http.StatusForbidden, gin.H{"error": "无权修改其他用户"})
+		return
+	}
 
 	// 先从数据库获取原始用户信息
 	var user User
-	if err := db.First(&user, Id).Error; err != nil {
+	if err := db.First(&user, targetID).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
 		return
 	}
@@ -143,6 +160,35 @@ func PutUser(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"data": user})
 }
+
+// ResetPassword 忘记密码（公开）：校验用户名+邮箱后重置
+func ResetPassword(c *gin.Context) {
+	var req struct {
+		Username string `json:"username"`
+		Email    string `json:"email"`
+		Password string `json:"password"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "无效的请求数据"})
+		return
+	}
+	if req.Username == "" || req.Email == "" || req.Password == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "用户名、邮箱、新密码均不能为空"})
+		return
+	}
+	var user User
+	if err := db.Where("username = ? AND email = ?", req.Username, req.Email).First(&user).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "用户名或邮箱不正确"})
+		return
+	}
+	user.Password = ScryptPw(req.Password)
+	if err := db.Model(&user).Update("password", user.Password).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "重置失败"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"message": "重置成功", "data": gin.H{"id": user.Id}})
+}
+
 func DeleteUser(c *gin.Context) {
 	var user User
 	db.Delete(&user, c.Param("id"))

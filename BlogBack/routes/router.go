@@ -7,76 +7,79 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// 函数名开头大写：公用方法；小写：私有方法，只有当前包内可以应用
 func InitRouter() *gin.Engine {
 	gin.SetMode(utils.AppMode)
 	r := gin.Default()
 	r.Use(middleware.Cors())
 	router := r.Group("/api")
 	{
-		//...登陆验证路由... Login.go
+		// 公开：登录 / 注册 / 读接口 / 页面聚合
 		router.POST("/login", api.Login)
+		router.POST("/logout", api.Logout)
+		router.POST("/users", api.PostUser) // 注册
+		router.POST("/password-reset", api.ResetPassword)
 
-		//...用户路由... User.go
 		router.GET("/users/:id", api.GetUserWithId)
 		router.GET("/users", api.GetUserWithUsername)
-		router.POST("/users", api.PostUser)
-		router.PUT("/users/:id", api.PutUser)
-		router.DELETE("/users/:id", api.DeleteUser)
 
-		// ...文章路由... Article.go
 		router.GET("/search", api.SearchArticle)
-		router.POST("/articles", api.PostArticle)
-		router.PUT("/articles/:id", api.PutArticle)
-		router.DELETE("/articles/:id", api.DeleteArticle)
-
-		// ...图片上传路由... Article.go
-		router.POST("/upload-image", api.UploadImage)
-
-		// ...分类路由... Category.go
 		router.GET("/categories", api.GetCategory)
-		router.POST("/categories", api.PostCatehgory)
-		router.PUT("/categories/:id", api.PutCategory)
-		router.DELETE("/categories/:id", api.DeleteCategory)
-
-		//...主页文章展示路由... CategoryWithArticle.go
 		router.GET("/categories-with-articles", api.CategoryWithArticle)
+		router.GET("/page/home", api.PageHome)
+		router.GET("/page/article/:id", api.PageArticle)
 
-		//...文章内容展示+评论路由... ContentAndComment.go
 		router.GET("/path-to-article/:id", api.GetContent)
-		router.POST("/path-to-article/:id", api.PostContent)
-		router.DELETE("/path-to-article/:id", api.DeleteContent)
 		router.GET("/comments/:articleId", api.GetComment)
 		router.GET("/commentsReplies/:commentId", api.GetCommentWithReplies)
-		router.PUT("/comments/:id/pin", api.PinComment)
-		router.PUT("/comments/:id", api.PutComment)
 
-		//...留言板路由... Message.go
 		router.GET("/commentBoard", api.GetMessage)
-		router.POST("/commentBoard", api.PostMessage)
-		router.DELETE("/commentBoard/:id", api.DeleteMessage)
-
-		//...友链网址... Friend.go
 		router.GET("/friendsWeb", api.GetFriend)
-		router.POST("/friendsWeb", api.PostFriend)
-		router.PUT("/friendsWeb/:id", api.PutFriend)
-		router.DELETE("/friendsWeb/:id", api.DeleteFriend)
-
-		//...友链申请... Application.go
 		router.GET("/application", api.GetApplication)
-		router.POST("/application", api.PostApplication)
-		router.DELETE("/application/:id", api.DeleteApplication)
-
-		//...建议... Advice.go
+		router.POST("/application", api.PostApplication) // 友链申请对访客开放
 		router.GET("/advice", api.GetAdvice)
-		router.POST("/advice", api.PostAdvice)
+		router.POST("/advice", api.PostAdvice) // 反馈对访客开放
+		router.GET("/about-me", api.GetAboutMe)
 
-		//...任务提醒... Reminder.go
-		router.GET("/reminder/:user_id", api.GetUserReminders) // 获取指定用户的提醒
-		router.POST("/reminder", api.PostReminder)
-		router.PUT("/reminder/:id", api.PutReminder)
-		router.DELETE("/reminder/:id", api.DeleteReminder)
-		router.POST("/reminder/:id/email", api.SendReminderEmail)
+		// 会话探测：未登录也返回 200，避免访客浏览时控制台 401
+		router.GET("/auth/me", middleware.AuthOptional(), api.AuthMe)
+
+		// 需登录（写操作 / 管理）
+		auth := router.Group("/")
+		auth.Use(middleware.AuthRequired())
+		{
+			auth.PUT("/users/:id", api.PutUser)
+			auth.DELETE("/users/:id", api.DeleteUser)
+
+			auth.POST("/articles", api.PostArticle)
+			auth.PUT("/articles/:id", api.PutArticle)
+			auth.DELETE("/articles/:id", api.DeleteArticle)
+			auth.POST("/upload-image", api.UploadImage)
+
+			auth.POST("/categories", api.PostCatehgory)
+			auth.PUT("/categories/:id", api.PutCategory)
+			auth.DELETE("/categories/:id", api.DeleteCategory)
+
+			auth.POST("/path-to-article/:id", api.PostContent)
+			auth.DELETE("/path-to-article/:id", api.DeleteContent)
+			auth.PUT("/comments/:id/pin", api.PinComment)
+			auth.PUT("/comments/:id", api.PutComment)
+
+			auth.POST("/commentBoard", api.PostMessage)
+			auth.DELETE("/commentBoard/:id", api.DeleteMessage)
+
+			auth.POST("/friendsWeb", api.PostFriend)
+			auth.PUT("/friendsWeb/:id", api.PutFriend)
+			auth.DELETE("/friendsWeb/:id", api.DeleteFriend)
+			auth.DELETE("/application/:id", api.DeleteApplication)
+
+			auth.PUT("/about-me", api.PutAboutMe)
+
+			auth.GET("/reminder/:user_id", api.GetUserReminders)
+			auth.POST("/reminder", api.PostReminder)
+			auth.PUT("/reminder/:id", api.PutReminder)
+			auth.DELETE("/reminder/:id", api.DeleteReminder)
+			auth.POST("/reminder/:id/email", api.SendReminderEmail)
+		}
 	}
 	return r
 }

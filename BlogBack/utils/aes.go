@@ -24,12 +24,11 @@ func init() {
 	if keyStr == "" {
 		log.Fatal("config.ini 中未配置 aes_secret_key")
 	}
-	// 转换为字节数组（十六进制字符串需解码）
-	aesKey, err = hex.DecodeString(keyStr) // 如果密钥是十六进制格式
-	// 若密钥是原始字符串（非十六进制），则直接转换：
-	// aesKey = []byte(keyStr)
-
-	// 验证密钥长度
+	// 必须是十六进制字符串（32/48/64 字符 → 16/24/32 字节）
+	aesKey, err = hex.DecodeString(keyStr)
+	if err != nil {
+		log.Fatalf("aes_secret_key 不是合法十六进制（可用 openssl rand -hex 16 生成）: %v", err)
+	}
 	if len(aesKey) != 16 && len(aesKey) != 24 && len(aesKey) != 32 {
 		log.Fatalf("AES 密钥长度必须是 16/24/32 字节，当前长度: %d", len(aesKey))
 	}
