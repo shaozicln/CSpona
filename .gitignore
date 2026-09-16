@@ -61,6 +61,9 @@ BlogFont/public/Pictures/*
 *.test
 *.out
 
-# ===== 数据库大文件本地备份（按需保留 schema） =====
-BlogBack/database/*.sql.bak
-BlogBack/database/*_local.sql
+# ===== 数据库备份=====
+BlogBack/database/*
+!BlogBack/database/.gitkeep
+
+# 本地私密文案（仓库保留 about-me.example.md）
+BlogBack/content/about-me.md
