@@ -2,25 +2,28 @@ package api
 
 import (
 	"BlogBack/utils"
-	"github.com/gin-gonic/gin"
+	"fmt"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
+
+	"github.com/gin-gonic/gin"
 )
 
 type Application struct {
-	Id           uint   `gorm:"primary key; autoIncrement" column:"id"`
-	Username     string `gorm:"type:varchar(255)" column:"username"`
-	Email        string `gorm:"type:varchar(255)" column:"email"`
-	Name         string `gorm:"type:varchar(255)" column:"name"`
-	Web          string `gorm:"type:varchar(255)" column:"web"`
-	Introduction string `gorm:"type:varchar(255)" column:"introduction"`
-	Img          string `gorm:"type:varchar(255)" column:"img"`
-	Avatar       string `gorm:"type:varchar(255)" column:"avatar"`
-	Background   string `gorm:"type:varchar(255)" column:"background"`
-	Description  string `gorm:"type:varchar(255)" column:"description"`
+	Id           uint   `gorm:"primaryKey;autoIncrement" json:"Id"`
+	Username     string `gorm:"type:varchar(255)" json:"Username"`
+	Email        string `gorm:"type:varchar(255)" json:"Email"`
+	Name         string `gorm:"type:varchar(255)" json:"Name"`
+	Web          string `gorm:"type:varchar(255)" json:"Web"`
+	Introduction string `gorm:"type:varchar(255)" json:"Introduction"`
+	Img          string `gorm:"type:varchar(255)" json:"Img"`
+	Avatar       string `gorm:"type:varchar(255)" json:"Avatar"`
+	Background   string `gorm:"type:varchar(255)" json:"Background"`
+	Description  string `gorm:"type:varchar(255)" json:"Description"`
 }
 
 func (Application) TableName() string {
@@ -37,59 +40,104 @@ func GetApplication(c *gin.Context) {
 	} else if web != "" {
 		db.Where("web = ?", web).Find(&applications)
 	} else if id != "" {
-		db.Where("Id = ?", id).Find(&applications)
+		db.Where("id = ?", id).Find(&applications)
 	} else {
-		db.Find(&applications)
+		db.Order("id desc").Find(&applications)
 	}
 	c.JSON(http.StatusOK, gin.H{"data": applications})
 }
 
-func PostApplication(c *gin.Context) {
-	var application Application
+func saveApplicationImage(c *gin.Context, field, baseDir string) (string, error) {
+	file, err := c.FormFile(field)
+	if err != nil {
+		return "", fmt.Errorf("缺少图片字段 %s", field)
+	}
+	if file.Size > 2<<20 {
+		return "", fmt.Errorf("%s 图片不能超过 2MB", field)
+	}
+	ext := strings.ToLower(filepath.Ext(file.Filename))
+	switch ext {
+	case ".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp":
+	default:
+		return "", fmt.Errorf("%s 仅支持常见图片格式", field)
+	}
+	base := filepath.Base(file.Filename)
+	base = strings.ReplaceAll(base, " ", "_")
+	unique := time.Now().Format("20060102150405") + "_" + strconv.FormatInt(time.Now().UnixNano()%1e6, 10) + "_" + base
+	savePath := filepath.Join(baseDir, unique)
+	if err := c.SaveUploadedFile(file, savePath); err != nil {
+		return "", fmt.Errorf("保存 %s 失败: %v", field, err)
+	}
+	return unique, nil
+}
 
-	// 获取文件
-	img, _ := c.FormFile("img")
-	background, _ := c.FormFile("background")
+func PostApplication(c *gin.Context) {
+	name := strings.TrimSpace(c.PostForm("name"))
+	web := strings.TrimSpace(c.PostForm("web"))
+	intro := strings.TrimSpace(c.PostForm("introduction"))
+	if name == "" || name == "undefined" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "请填写网站名称"})
+		return
+	}
+	if web == "" || web == "undefined" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "请填写网站地址"})
+		return
+	}
 
 	baseDir := utils.GetImageBaseDir()
-	_ = os.MkdirAll(baseDir, os.ModePerm)
+	if err := os.MkdirAll(baseDir, 0755); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "创建图片目录失败: " + err.Error()})
+		return
+	}
 
-	// 处理图片文件
-	imgname := filepath.Base(img.Filename)
-	savePath := filepath.Join(baseDir, imgname)
-	savePath = strings.ReplaceAll(savePath, "\\", "/")
-	_ = c.SaveUploadedFile(img, savePath)
+	imgName, err := saveApplicationImage(c, "img", baseDir)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	bgName, err := saveApplicationImage(c, "background", baseDir)
+	if err != nil {
+		// 封面已存，尽量清理
+		_ = os.Remove(filepath.Join(baseDir, imgName))
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
 
-	// 处理背景文件
-	backgroundname := filepath.Base(background.Filename)
-	savePath2 := filepath.Join(baseDir, backgroundname)
-	savePath2 = strings.ReplaceAll(savePath2, "\\", "/")
-	_ = c.SaveUploadedFile(background, savePath2)
+	clean := func(s string) string {
+		s = strings.TrimSpace(s)
+		if s == "undefined" || s == "null" {
+			return ""
+		}
+		return s
+	}
 
-	// 填充数据
-	application.Name = c.PostForm("name")
-	application.Username = c.PostForm("username")
-	application.Email = c.PostForm("email")
-	application.Web = c.PostForm("web")
-	application.Introduction = c.PostForm("introduction")
-	application.Img = imgname
-	application.Avatar = c.PostForm("avatar")
-	application.Background = backgroundname
-	application.Description = c.PostForm("description")
+	application := Application{
+		Name:         name,
+		Username:     clean(c.PostForm("username")),
+		Email:        clean(c.PostForm("email")),
+		Web:          web,
+		Introduction: intro,
+		Img:          imgName,
+		Avatar:       clean(c.PostForm("avatar")),
+		Background:   bgName,
+		Description:  clean(c.PostForm("description")),
+	}
 
-	db.Create(&application)
-	c.JSON(200, gin.H{"message": "created successfully", "data": application})
+	if err := db.Create(&application).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "保存申请失败: " + err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"message": "created successfully", "data": application})
 }
 
 func DeleteApplication(c *gin.Context) {
-	var applications []Application
 	id := c.Param("id")
-	id1, _ := strconv.ParseUint(id, 10, 64)
-	// 检查是否存在该ID的记录
-	db.Where("Id=?", id1).First(&applications)
-	// 如果记录存在，则删除记录
-	err = db.Where("Id=?", id1).Delete(&applications).Error
-	if err != nil {
+	id1, err := strconv.ParseUint(id, 10, 64)
+	if err != nil || id1 == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "无效 ID"})
+		return
+	}
+	if err := db.Where("id = ?", id1).Delete(&Application{}).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "删除失败"})
 		return
 	}

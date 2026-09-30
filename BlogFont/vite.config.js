@@ -20,8 +20,11 @@ export default defineConfig({
         target: 'http://127.0.0.1:3000',
         changeOrigin: true,
       },
-      // 图片开发期直接用 https://cspona.top/Pictures/（见 src/utils/image.js）
-      // 不再代理 /Pictures，避免和 public/Pictures 本地文件打架
+      // 友链等新上传图在后端 Pictures 目录；public 没有时回源到 Go 静态
+      '/Pictures': {
+        target: 'http://127.0.0.1:3000',
+        changeOrigin: true,
+      },
     },
   },
 })

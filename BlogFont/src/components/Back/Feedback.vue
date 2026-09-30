@@ -271,6 +271,14 @@ const createAdvice = async () => {
 
 const createApplication = async () => {
   try {
+    if (!websiteName.value.trim()) {
+      alert("请填写网站名称");
+      return;
+    }
+    if (!websiteUrl.value.trim()) {
+      alert("请填写网址");
+      return;
+    }
     if (!coverFile.value) {
       alert("请上传封面图片");
       return;
@@ -289,21 +297,23 @@ const createApplication = async () => {
     }
 
     const formData = new FormData();
-    formData.append("username", usernameWeb);
-    formData.append("email", emailWeb);
-    formData.append("name", websiteName.value);
-    formData.append("web", websiteUrl.value);
-    formData.append("introduction", websiteDescription.value);
+    formData.append("username", usernameWeb || "");
+    formData.append("email", emailWeb || "");
+    formData.append("name", websiteName.value.trim());
+    formData.append("web", websiteUrl.value.trim());
+    formData.append("introduction", websiteDescription.value.trim());
     formData.append("img", coverFile.value);
-    formData.append("avatar", avatar);
+    formData.append("avatar", avatar || "");
     formData.append("background", backgroundFile.value);
-    formData.append("description", friendDescription.value);
+    formData.append("description", friendDescription.value.trim());
     const response = await fetch(`${URL}/application`, {
       method: "POST",
       body: formData,
+      credentials: "include",
     });
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      const err = await response.json().catch(() => ({}));
+      throw new Error(err.error || `HTTP error! status: ${response.status}`);
     }
     const data = await response.json();
     console.log(data);
@@ -318,7 +328,7 @@ const createApplication = async () => {
     backgroundFileName.value = "";
   } catch (error) {
     console.error(error);
-    alert("图片上传失败");
+    alert(error?.message || "提交失败，请检查图片与填写项");
   }
 };
 </script>

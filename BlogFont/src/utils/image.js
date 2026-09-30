@@ -1,5 +1,5 @@
 /**
- * 图片公网前缀（开发/生产都优先走线上，保证有图）。
+ * 图片公网前缀（文章等历史图：开发期也可走线上）。
  * 可用 .env 的 VITE_IMAGE_BASE 覆盖。
  */
 export const IMAGE_BASE = (
@@ -24,6 +24,26 @@ export function resolveImageUrl(path, fallback = "boli.jpg") {
   s = s.replace(/\\/g, "/").replace(/^\/+/, "");
   if (/^pictures\//i.test(s)) s = s.slice("pictures/".length);
   return IMAGE_BASE + s;
+}
+
+/**
+ * 同源 /Pictures/（新上传的友链图等）：
+ * - 本地：Vite 直接读 public/Pictures，或走后端静态
+ * - 线上：nginx / 后端静态同一目录
+ * 不要用线上 CDN 拼本地刚上传、尚未同步到公网的文件。
+ */
+export function resolveLocalPicturesUrl(path, fallback = "boli.jpg") {
+  let s = (path ?? "").toString().trim();
+  if (!s) s = fallback;
+  if (/^https?:\/\//i.test(s)) return s;
+  s = s.replace(/\\/g, "/").replace(/^\/+/, "");
+  if (/^pictures\//i.test(s)) s = s.slice("pictures/".length);
+  const encoded = s
+    .split("/")
+    .filter(Boolean)
+    .map((p) => encodeURIComponent(p))
+    .join("/");
+  return `/Pictures/${encoded}`;
 }
 
 /**

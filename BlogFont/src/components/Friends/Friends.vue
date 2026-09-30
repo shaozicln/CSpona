@@ -495,20 +495,21 @@ h2 {
 
 .friend-details li:last-child button {
   padding: 10px 20px;
-  background: rgb(112, 184, 227);
-  color: white;
-  border: none;
+  background: transparent;
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.85);
   border-radius: 5px;
   cursor: pointer;
   font-size: 16px;
   transition: all 0.3s ease;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  box-shadow: none;
 }
 
 .friend-details li:last-child button:hover {
-  background: rgb(112, 184, 227);
+  background: rgba(255, 255, 255, 0.12);
   transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  box-shadow: none;
+  border-color: #fff;
 }
 
 #send {

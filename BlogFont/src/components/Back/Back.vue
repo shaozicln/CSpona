@@ -54,16 +54,16 @@
                             <div>
                                 <h1>{{ index + 1 }}</h1>
                                 <div id="button-group">
-                                    <button class="button" @click="applicationPost(application.Id)">同意申请</button>
+                                    <button class="button" @click="applicationPost(application)">同意申请</button>
                                     <button class="button" @click="applicationDelete(application.Id)">删除申请</button>
                                 </div>
-                                <p>U：{{ application.Username }}</p>
-                                <p>E：{{ application.Email }}</p>
-                                <p>N：{{ application.Name }}</p>
-                                <p>W：{{ application.Web }}</p>
-                                <p>I：{{ application.Introduction }}</p>
+                                <p>U：{{ application.Username || '—' }}</p>
+                                <p>E：{{ application.Email || '—' }}</p>
+                                <p>N：{{ application.Name || '—' }}</p>
+                                <p>W：{{ application.Web || '—' }}</p>
+                                <p>I：{{ application.Introduction || '—' }}</p>
                             </div>
-                            <img :src="getImageUrl(application.Img)">
+                            <img :src="getImageUrl(application.Img || application.Background)" alt="封面">
                         </div>
                     </div>
                 </div>
@@ -144,13 +144,12 @@ import { apiJson, apiFetch, promptLoginIfUnauthorized } from '@/utils/api';
 import { marked } from 'marked';
 import DOMPurify from 'dompurify';
 import { extractNeteaseId, resolveMusicUrl } from '@/utils/music.js';
+import { resolveLocalPicturesUrl } from '@/utils/image.js';
 
 marked.setOptions({ gfm: true, breaks: true });
 
-const { proxy } = getCurrentInstance()
-const getImageUrl = (imgName) => {
-  return `${proxy.$imageBaseUrl}${imgName}`
-}
+// 友链申请封面：必须走同源 /Pictures（刚上传的文件只在本机/本站磁盘，不在 CDN）
+const getImageUrl = (imgName) => resolveLocalPicturesUrl(imgName || '', 'boli.jpg');
 
 const title = ref('');
 const content = ref('');
@@ -381,52 +380,62 @@ function hideModal2() {
     showModal2.value = false;
 }
 
-const applicationPost = async (index) => {
-    const newFriendsWeb = ref('');
+const applicationPost = async (appOrId) => {
     try {
-        const response = await fetch(`${URL}/application?id=` + index)
-        const data = await response.json()
-        console.log(data)
-        newFriendsWeb.value = data.data;
-        await nextTick(); // wait for the assignment to complete
-    } catch (error) {
-        console.error(error)
-    }
-    try {
-        const response = await fetch(`${URL}/friendsWeb`, {
+        let app = typeof appOrId === 'object' && appOrId
+            ? appOrId
+            : applications.value.find((a) => Number(a.Id) === Number(appOrId));
+
+        if (!app || !app.Name || !app.Web || app.Name === 'undefined') {
+            const response = await fetch(`${URL}/application?id=` + (app?.Id || appOrId));
+            const data = await response.json();
+            app = Array.isArray(data.data) ? data.data[0] : data.data;
+        }
+        if (!app?.Name || !app?.Web || app.Name === 'undefined') {
+            alert('该申请缺少网站名称或网址，无法添加友链。请让对方重新提交完整信息。');
+            return;
+        }
+
+        const { res, data } = await apiJson('/friendsWeb', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
             body: JSON.stringify({
-                name: newFriendsWeb.value[0].Name,
-                web: newFriendsWeb.value[0].Web,
-                introduction: newFriendsWeb.value[0].Introduction,
-                img: newFriendsWeb.value[0].Img,
-                avatar: newFriendsWeb.value[0].Avatar,
-                background: newFriendsWeb.value[0].Background,
-                description: newFriendsWeb.value[0].Description,
+                name: app.Name,
+                web: app.Web,
+                introduction: app.Introduction || '',
+                img: app.Img || '',
+                avatar: app.Avatar || '',
+                background: app.Background || '',
+                description: app.Description || '',
             }),
-        })
-        const data = await response.json()
-        console.log(data)
-        alert("友链添加成功 (^_^) !")
+        });
+        if (promptLoginIfUnauthorized(res, data)) return;
+        if (!res.ok) {
+            alert(data?.error || '添加友链失败');
+            return;
+        }
+        await apiFetch('/application/' + app.Id, { method: 'DELETE' });
+        applications.value = applications.value.filter((a) => Number(a.Id) !== Number(app.Id));
+        alert('友链添加成功 (^_^) !');
     } catch (error) {
-        console.error(error)
+        console.error(error);
+        alert('添加友链失败');
     }
-}
+};
 const applicationDelete = async (index) => {
     try {
-        const response = await fetch(`${URL}/application/` + index, {
-            method: 'DELETE',
-        })
-        const data = await response.json()
-        console.log(data)
-        alert("友链申请删除成功 (-w-) !")
+        const { res, data } = await apiJson('/application/' + index, { method: 'DELETE' });
+        if (promptLoginIfUnauthorized(res, data)) return;
+        if (!res.ok) {
+            alert(data?.message || data?.error || '删除失败');
+            return;
+        }
+        applications.value = applications.value.filter((a) => Number(a.Id) !== Number(index));
+        alert('友链申请删除成功 (-w-) !');
     } catch (error) {
-        console.error(error)
+        console.error(error);
+        alert('删除失败');
     }
-}
+};
 
 
 function article() {
