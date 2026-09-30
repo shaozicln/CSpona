@@ -1,0 +1,32 @@
+[
+  {
+    "img": "Venti-7.jpg",
+    "title": "透龙山风景区",
+    "layerTitle": "TaskRe ",
+    "subtitle": "Tools - 01 基于邮箱SMTP的任务提醒",
+    "description": "一个简单的网页，让用户可以添加自定义的提醒任务。<br>比如:“明天下午3点取快递”、“这周五下午5点前交实验报告”、“下周三四六级报名截止”等。<br>通过邮箱的SMTP功能通知用户，",
+    "rightTitle": " minder",
+    "rightSubtitle": "Reminder Tool",
+    "link": "/task-reminder"
+  },
+  {
+    "img": "31.jpg",
+    "title": "OCraft",
+    "layerTitle": "OC ",
+    "subtitle": "OCraft",
+    "description": "OCraft，通过 agent 演绎属于你的故事。<br>基于 Next.js / R3F / NestJS，网页端可控互动叙事 Agent。<br>网址：https://ocraft.cspona.top/",
+    "rightTitle": " raft",
+    "rightSubtitle": "OC Wiki",
+    "link": "https://ocraft.cspona.top/"
+  },
+  {
+    "img": "Venti-2.jpg",
+    "title": "敬请期待",
+    "layerTitle": "敬请 ",
+    "subtitle": "敬请期待",
+    "description": "敬请期待",
+    "rightTitle": " 期待",
+    "rightSubtitle": "Stay tuned",
+    "link": "/"
+  }
+]

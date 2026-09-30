@@ -51,30 +51,27 @@
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue';
 import { useRouter } from 'vue-router';
-import { Back } from "@element-plus/icons-vue";
 import { ArrowLeft, ArrowRight } from "@element-plus/icons-vue";
 import MyHead from '@/components/MyHead.vue';
+import { apiFetch } from '@/utils/api';
 
 import { getCurrentInstance } from "vue";
 const instance = getCurrentInstance();
 const { proxy } = instance || {};
-const URL = instance?.appContext.config.globalProperties.URL;
 
 const getImageUrl = (imgName) => {
     if (!imgName) return `${proxy?.$imageBaseUrl}boli.jpg`;
+    if (/^https?:\/\//i.test(imgName)) return imgName;
     return `${proxy?.$imageBaseUrl}${imgName}`;
 };
 
-// 路由实例
 const router = useRouter();
 
-// 控制导航栏显示的变量
 const isNavVisible = ref(false);
-// 导航栏是否被鼠标悬停
 const isNavHovered = ref(false);
 
-// 轮播数据
-const slides = [
+/** 本地兜底（接口失败时用）；正式内容改服务器 content/tools-list.json */
+const fallbackSlides = [
     {
         imgUrl: 'Venti-7.jpg',
         title: '透龙山风景区',
@@ -107,74 +104,91 @@ const slides = [
     },
 ];
 
+const slides = ref([...fallbackSlides]);
 const isInitialLoad = ref(true);
-
-// 当前轮播索引
 const currentIndex = ref(0);
 
-// 监听鼠标移动事件
+function normalizeSlide(raw) {
+    const img = raw.img || raw.imgUrl || '';
+    const link = raw.link || raw.route || '/';
+    return {
+        imgUrl: img,
+        title: raw.title || '',
+        layerTitle: raw.layerTitle || '',
+        subtitle: raw.subtitle || '',
+        description: raw.description || '',
+        rightTitle: raw.rightTitle || '',
+        rightSubtitle: raw.rightSubtitle || '',
+        route: link,
+    };
+}
+
+async function loadToolsList() {
+    try {
+        const res = await apiFetch('/tools/list');
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const body = await res.json();
+        const list = Array.isArray(body?.data) ? body.data : [];
+        if (list.length) {
+            slides.value = list.map(normalizeSlide);
+            if (currentIndex.value >= slides.value.length) {
+                currentIndex.value = 0;
+            }
+        }
+    } catch (e) {
+        console.warn('加载工具箱列表失败，使用本地兜底', e);
+    }
+}
+
 const handleMouseMove = (e) => {
-    // 当鼠标在屏幕上方100px范围内且没有悬停在导航上时
     if (e.clientY < 100 && !isNavHovered.value) {
         isNavVisible.value = true;
-    }
-    // 当鼠标离开上方区域且没有悬停在导航上时隐藏
-    else if (e.clientY >= 100 && !isNavHovered.value) {
+    } else if (e.clientY >= 100 && !isNavHovered.value) {
         isNavVisible.value = false;
     }
 };
 
-// 鼠标进入导航区域
 const handleNavMouseEnter = () => {
     isNavHovered.value = true;
-    isNavVisible.value = true; // 保持显示
+    isNavVisible.value = true;
 };
 
-// 鼠标离开导航区域
 const handleNavMouseLeave = () => {
     isNavHovered.value = false;
-    // 检查鼠标是否还在上方区域
     isNavVisible.value = window.event?.clientY < 100;
 };
 
-// 切换到下一张
 const handleNext = () => {
-    if (isInitialLoad.value) {
-    isInitialLoad.value = false; // 首次切换后标记为非初始
-  }
-    currentIndex.value = (currentIndex.value + 1) % slides.length;
+    if (!slides.value.length) return;
+    if (isInitialLoad.value) isInitialLoad.value = false;
+    currentIndex.value = (currentIndex.value + 1) % slides.value.length;
 };
 
-// 切换到上一张
 const handlePrev = () => {
-    if (isInitialLoad.value) {
-    isInitialLoad.value = false; // 首次切换后标记为非初始
-  }
-    currentIndex.value = (currentIndex.value - 1 + slides.length) % slides.length;
+    if (!slides.value.length) return;
+    if (isInitialLoad.value) isInitialLoad.value = false;
+    currentIndex.value = (currentIndex.value - 1 + slides.value.length) % slides.value.length;
 };
 
-// 点击容器（非按钮区域）跳转路由,区分内部路由和外部链接
 const handleContainerClick = () => {
-  const currentRoute = slides[currentIndex.value].route;
-  // 判断是否为外部链接
-  if (currentRoute.startsWith('http://') || currentRoute.startsWith('https://')) {
-    // 外部链接用新窗口打开
-    window.open(currentRoute, '_blank');
-  } else {
-    // 内部路由用路由跳转
-    router.push(currentRoute);
-  }
+    const item = slides.value[currentIndex.value];
+    if (!item) return;
+    const currentRoute = item.route || '/';
+    if (currentRoute.startsWith('http://') || currentRoute.startsWith('https://')) {
+        window.open(currentRoute, '_blank');
+    } else {
+        router.push(currentRoute);
+    }
 };
 
-// 挂载时添加鼠标监听
 onMounted(() => {
     window.addEventListener('mousemove', handleMouseMove);
+    loadToolsList();
     setTimeout(() => {
-    isInitialLoad.value = false; // 延迟标记为非初始，确保首项渲染完成
-  }, 100);
+        isInitialLoad.value = false;
+    }, 100);
 });
 
-// 卸载时移除监听
 onUnmounted(() => {
     window.removeEventListener('mousemove', handleMouseMove);
 });

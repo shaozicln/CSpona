@@ -39,6 +39,7 @@ func InitRouter() *gin.Engine {
 		router.GET("/advice", api.GetAdvice)
 		router.POST("/advice", api.PostAdvice) // 反馈对访客开放
 		router.GET("/about-me", api.GetAboutMe)
+		router.GET("/tools/list", api.GetToolsList)
 		router.GET("/music/settings", api.GetMusicSettings)
 		router.GET("/music/meting", api.ProxyMeting)
 

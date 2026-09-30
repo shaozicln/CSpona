@@ -81,6 +81,24 @@ func GetAboutMePath() string {
 	return path
 }
 
+// GetToolsListPath 工具箱轮播列表 JSON
+// 优先级：config.ini [content] ToolsList > 默认 content/tools-list.json
+func GetToolsListPath() string {
+	path := ""
+	if cfg, err := ini.Load("config.ini"); err == nil {
+		path = strings.TrimSpace(cfg.Section("content").Key("ToolsList").String())
+	}
+	if path == "" {
+		path = filepath.Join("content", "tools-list.json")
+	}
+	if !filepath.IsAbs(path) {
+		if abs, err := filepath.Abs(path); err == nil {
+			path = abs
+		}
+	}
+	return path
+}
+
 // GetMusicSettingsPath 站点默认背景音乐配置 JSON
 // 优先级：config.ini [music] Settings > 默认 content/music-default.json
 func GetMusicSettingsPath() string {
