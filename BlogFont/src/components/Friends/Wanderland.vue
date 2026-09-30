@@ -382,7 +382,7 @@ const fetchCategories = async () => {
   try {
     categoryError.value = null;
     startCatLoading();
-    const response = await apiFetch(`/page/home`);
+    const response = await apiFetch(`/page/home?scope=wanderland`);
     if (!response.ok) throw new Error(`HTTP错误: ${response.status}`);
 
     const data = await response.json();

@@ -139,7 +139,7 @@ const initArticleId = () => {
 const fetchCategories = async () => {
   try {
     isLoadingCategories.value = true;
-    const response = await fetch(`${URL}/categories-with-articles`);
+    const response = await fetch(`${URL}/categories-with-articles?scope=wanderland`);
     if (!response.ok) throw new Error(`HTTP错误: ${response.status}`);
 
     const data = await response.json();

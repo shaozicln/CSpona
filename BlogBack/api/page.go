@@ -81,7 +81,14 @@ type pageArticleDetail struct {
 }
 
 // PageHome 文章列表页聚合：分类 + 文章 + 已解析封面 URL
+// scope=articles（默认）：排除「测试」「漫游地」
+// scope=wanderland：仅返回漫游地分类
 func PageHome(c *gin.Context) {
+	scope := strings.TrimSpace(c.Query("scope"))
+	if scope == "" {
+		scope = "articles"
+	}
+
 	var categories []Category
 	if err := db.Find(&categories).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"code": 1, "msg": "加载分类失败", "data": nil})
@@ -90,10 +97,19 @@ func PageHome(c *gin.Context) {
 
 	blocks := make([]pageCategoryBlock, 0, len(categories))
 	for _, category := range categories {
+		if scope == "wanderland" {
+			if !isWanderlandCategory(category) {
+				continue
+			}
+		} else if isArticleListExcludedCategory(category) {
+			// 默认文章列表：不要测试、不要漫游地
+			continue
+		}
+
 		var articles []Article
 		db.Where("category_id = ?", category.Id).Find(&articles)
 		sort.Slice(articles, func(i, j int) bool {
-			if category.Id == 1000 {
+			if isWanderlandCategory(category) {
 				pi := isWanderlandPinned(articles[i])
 				pj := isWanderlandPinned(articles[j])
 				if pi != pj {
@@ -277,4 +293,30 @@ func isWanderlandPinned(a Article) bool {
 		return true
 	}
 	return strings.Contains(a.Title, "正式开放") && strings.Contains(a.Title, "Wanderland")
+}
+
+const (
+	categoryIDTest       uint = 12
+	categoryIDWanderland uint = 1000
+)
+
+func isWanderlandCategory(cat Category) bool {
+	if cat.Id == categoryIDWanderland {
+		return true
+	}
+	name := strings.TrimSpace(cat.Name)
+	lower := strings.ToLower(name)
+	return strings.Contains(name, "漫游地") || strings.Contains(lower, "wanderland")
+}
+
+func isTestCategory(cat Category) bool {
+	if cat.Id == categoryIDTest {
+		return true
+	}
+	return strings.TrimSpace(cat.Name) == "测试"
+}
+
+// 文章列表不应展示：测试区、漫游地（漫游地只在 /wanderland）
+func isArticleListExcludedCategory(cat Category) bool {
+	return isTestCategory(cat) || isWanderlandCategory(cat)
 }

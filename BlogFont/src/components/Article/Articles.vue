@@ -43,8 +43,8 @@
       />
       <template v-else>
         <!-- 文章分类区域（保持不变） -->
-        <div class="article-category" v-for="(category, index) in categories" :key="'category-' + category.Id">
-          <h3 v-if="category && category.Id !== 1000" :id="'category-' + index">
+        <div class="article-category" v-for="(category, index) in filteredCategories" :key="'category-' + category.Id">
+          <h3 :id="'category-' + index">
             {{ category.Name }}
           </h3>
           <div class="articles-list" v-if="category.Articles?.length > 0">
@@ -145,11 +145,17 @@ const fetchCategories = async () => {
     await stopListLoading();
   }
 };
-// 过滤掉 Id === 1000 的分类
+// 兜底：排除漫游地(1000)与测试(12)，正常应由 BFF 过滤
 const filteredCategories = computed(() => {
-  return categories.value.filter(
-    (category) => category && category.Id !== 1000
-  );
+  return categories.value.filter((category) => {
+    if (!category) return false;
+    const id = Number(category.Id);
+    if (id === 1000 || id === 12) return false;
+    const name = String(category.Name || "");
+    if (name === "测试") return false;
+    if (name.includes("漫游地") || /wanderland/i.test(name)) return false;
+    return true;
+  });
 });
 const getArticleCounts = () => {
   const articleCounts = localStorage.getItem("articleCounts");
